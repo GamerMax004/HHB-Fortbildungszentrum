@@ -1,13 +1,13 @@
 """
-HHB Fortbildungszentrum -- Fortbildungs- und Pruefungsportal
+HHB Fortbildungszentrum -- Fortbildungs- und Prüfungsportal
 Einzeldatei-Backend: Flask-Webserver (Keep-Alive) + Discord-Bot (discord.py)
 
-Benoetigte Umgebungsvariablen:
+Benötigte Umgebungsvariablen:
   DISCORD_BOT_TOKEN       Bot-Token
   DISCORD_CLIENT_ID       OAuth2 Client-ID der Discord-Anwendung
   DISCORD_CLIENT_SECRET   OAuth2 Client-Secret
   DISCORD_REDIRECT_URI    z.B. https://deine-domain.tld/callback
-  FLASK_SECRET_KEY        beliebiger zufaelliger String (optional, wird sonst generiert)
+  FLASK_SECRET_KEY        beliebiger zufälliger String (optional, wird sonst generiert)
   PORT                    optional, Standard 8080
 """
 
@@ -76,7 +76,7 @@ def grade_for_percent(pct):
 SEED_TESTS = {
     "test_1": {
         "id": "test_1",
-        "title": "Fortbildung fuer Auszubildende",
+        "title": "Fortbildung für Auszubildende",
         "time_limit_minutes": 25,
         "max_points": 40,
         "content": [
@@ -86,16 +86,16 @@ SEED_TESTS = {
                     {
                         "title": "Verhalten als Bankberater",
                         "text": "Lest unbedingt das Handbuch in #berater-handbuch durch. Als "
-                                 "Bankberater muesst ihr jederzeit die Schweigepflicht beachten "
-                                 "und immer freundlich gegenueber den Kunden sein. Sagt immer nur "
-                                 "Dinge, die ihr zu 100% wisst, um keine Missverstaendnisse zu "
+                                 "Bankberater müsst ihr jederzeit die Schweigepflicht beachten "
+                                 "und immer freundlich gegenüber den Kunden sein. Sagt immer nur "
+                                 "Dinge, die ihr zu 100% wisst, um keine Missverständnisse zu "
                                  "verursachen."
                     },
                     {
                         "title": "Arbeiten im Roleplay",
                         "text": "Kommt niemals hinter den Schalter, auch wenn eine Person Hilfe "
-                                 "am Automaten benoetigt. Bleibt immer in der Naehe des "
-                                 "Panik-Buttons (Notruf senden). Schliesst die Tueren mit Kegeln "
+                                 "am Automaten benötigt. Bleibt immer in der Nähe des "
+                                 "Panik-Buttons (Notruf senden). Schliesst die Türen mit Kegeln "
                                  "ab, damit sich niemand unbefugt Zutritt verschaffen kann."
                     },
                 ],
@@ -111,13 +111,13 @@ SEED_TESTS = {
                     },
                     {
                         "title": "Tickets bearbeiten",
-                        "text": "Begruesst den Kunden freundlich, wartet auf einen Zahlungslink "
-                                 "(bei Auszahlungen nicht noetig), fuehrt den jeweiligen Befehl "
+                        "text": "Begrüsst den Kunden freundlich, wartet auf einen Zahlungslink "
+                                 "(bei Auszahlungen nicht nötig), führt den jeweiligen Befehl "
                                  "aus und sendet dem Kunden einen Screenshot als Arbeitsnachweis."
                     },
                     {
                         "title": "Tickets abschliessen",
-                        "text": "Fragt den Kunden, ob ihr noch etwas fuer ihn tun koennt. Fuehrt "
+                        "text": "Fragt den Kunden, ob ihr noch etwas für ihn tun könnt. Führt "
                                  "/ticket requestclose aus und stellt 12 Stunden Timeout ein. "
                                  "Dokumentiert eure Arbeit anschliessend in #dokumentation."
                     },
@@ -128,21 +128,21 @@ SEED_TESTS = {
                 "sections": [
                     {
                         "title": "Kundenservice",
-                        "text": "Freundliches Verhalten gegenueber Kunden, Kunden immer siezen, "
+                        "text": "Freundliches Verhalten gegenüber Kunden, Kunden immer siezen, "
                                  "jeder Kunde wird gleich behandelt. Bei Fragen ehrlich antworten, "
                                  "im Zweifel helfen andere Bankberater gerne aus."
                     },
                     {
                         "title": "Schwierige Kunden",
-                        "text": "Nehmt nicht alles persoenlich, kommuniziert sachlich und fallt "
+                        "text": "Nehmt nicht alles persönlich, kommuniziert sachlich und fallt "
                                  "dem Kunden nicht ins Wort. Bei anhaltendem Fehlverhalten kann "
                                  "vom Hausrecht Gebrauch gemacht werden."
                     },
                     {
                         "title": "Hausverbot",
                         "text": "Ein Hausverbot muss im Kanal #hausverbote dokumentiert und mit "
-                                 "/hausverbot ausgesprochen werden. Mitarbeiter duerfen maximal 7 "
-                                 "Tage aussprechen, bei schwerwiegenden Verstoessen wird die "
+                                 "/hausverbot ausgesprochen werden. Mitarbeiter dürfen maximal 7 "
+                                 "Tage aussprechen, bei schwerwiegenden Verstössen wird die "
                                  "Leitungsebene kontaktiert."
                     },
                 ],
@@ -153,7 +153,7 @@ SEED_TESTS = {
     },
     "test_2": {
         "id": "test_2",
-        "title": "Fortbildung fuer Kredite",
+        "title": "Fortbildung für Kredite",
         "time_limit_minutes": 35,
         "max_points": 50,
         "content": [
@@ -163,15 +163,15 @@ SEED_TESTS = {
                     {
                         "title": "Was ist ein Kredit?",
                         "text": "Ein Kredit ist die zeitweise Ueberlassung von Geld durch einen "
-                                 "Kreditgeber an einen Kreditnehmer. Der Empfaenger verpflichtet "
+                                 "Kreditgeber an einen Kreditnehmer. Der Empfänger verpflichtet "
                                  "sich, den Betrag zu einem festgelegten Zeitpunkt oder in Raten "
-                                 "zurueckzuzahlen, wofuer die Bank zusaetzliche Zinsen und "
-                                 "Gebuehren erhebt."
+                                 "zurückzuzahlen, wofür die Bank zusätzliche Zinsen und "
+                                 "Gebühren erhebt."
                     },
                     {
                         "title": "Normaler Kredit",
                         "text": "Einfacher Kredit ohne festen Tilgungsplan: flexible "
-                                 "Rueckzahlung, keine festen Monatsraten, geeignet fuer kleinere "
+                                 "Rückzahlung, keine festen Monatsraten, geeignet für kleinere "
                                  "Finanzierungen."
                     },
                     {
@@ -182,7 +182,7 @@ SEED_TESTS = {
                                  "Zinskosten."
                     },
                     {
-                        "title": "Annuitaetendarlehen",
+                        "title": "Annuitätendarlehen",
                         "text": "Kredit mit fester Gesamtrate aus Tilgung und Zinsen. Am Anfang "
                                  "zahlt der Kunde viele Zinsen, mit der Zeit sinken die Zinsen und "
                                  "der Tilgungsanteil steigt. Besonders gut planbar."
@@ -190,7 +190,7 @@ SEED_TESTS = {
                     {
                         "title": "Ablauf Kredit ausstellen",
                         "text": "Kunde beantragt Kredit -> Kreditvertrag wird in "
-                                 "#kredit-vertraege gesendet und die Leitungsebene gepingt -> "
+                                 "#kredit-verträge gesendet und die Leitungsebene gepingt -> "
                                  "Kredit wird eingetragen -> Kredit-ID erscheint im System -> "
                                  "Auszahlung erfolgt."
                     },
@@ -201,39 +201,39 @@ SEED_TESTS = {
                 "sections": [
                     {
                         "title": "Kredit anlegen",
-                        "text": "Vertragsvorlage aus #berater-handbuch kopieren und ausfuellen, "
+                        "text": "Vertragsvorlage aus #berater-handbuch kopieren und ausfüllen, "
                                  "vom Kunden unterschreiben lassen, mit /kredit_eintragen "
                                  "eintragen, Nachricht mit Kunde und Vertrag als PDF in "
-                                 "#kredit-vertraege senden. Auszahlung erfolgt durch die "
-                                 "Auszahlungszustaendigen."
+                                 "#kredit-verträge senden. Auszahlung erfolgt durch die "
+                                 "Auszahlungszuständigen."
                     },
                     {
                         "title": "Kreditinformationen abrufen",
                         "text": "Mit /kredit_info erhaltet ihr jederzeit Kredit-ID, Kredittyp, "
-                                 "Kreditsumme, Restschuld, naechste Rate und letzte Zahlungen."
+                                 "Kreditsumme, Restschuld, nächste Rate und letzte Zahlungen."
                     },
                 ],
             },
             {
-                "chapter": "Kapitel 3 - Rueckzahlung, Mahnwesen, Sonderfaelle",
+                "chapter": "Kapitel 3 - Rückzahlung, Mahnwesen, Sonderfälle",
                 "sections": [
                     {
                         "title": "Kreditraten bezahlen",
                         "text": "Rate mit /kredit_zahlen abbuchen. Nach jeder Zahlung sinkt die "
                                  "Restschuld, die Zahlung wird dokumentiert, der Kredit schliesst "
-                                 "nach vollstaendiger Tilgung automatisch."
+                                 "nach vollständiger Tilgung automatisch."
                     },
                     {
                         "title": "Mindestlaufzeit",
                         "text": "Jeder Kredit hat eine Mindestlaufzeit von 80% der vereinbarten "
-                                 "Zeit, eine vorzeitige Beendigung ist vorher nicht moeglich. Nach "
-                                 "der Mindestlaufzeit ist vollstaendige Rueckzahlung moeglich, "
-                                 "jedoch mit einem Aufschlag von 15% fuer entgangene Zinsen."
+                                 "Zeit, eine vorzeitige Beendigung ist vorher nicht möglich. Nach "
+                                 "der Mindestlaufzeit ist vollständige Rückzahlung möglich, "
+                                 "jedoch mit einem Aufschlag von 15% für entgangene Zinsen."
                     },
                     {
                         "title": "Mahnverfahren",
                         "text": "1. Zahlungsverzug -> Zahlungserinnerung. 2. Zahlungsverzug -> "
-                                 "Mahnung. 3. Zahlungsverzug -> gesamte Restschuld wird faellig, "
+                                 "Mahnung. 3. Zahlungsverzug -> gesamte Restschuld wird fällig, "
                                  "Vollstreckung bzw. Einzug des Geldes."
                     },
                 ],
@@ -247,7 +247,7 @@ SEED_TESTS = {
 SEED_QUESTIONS = {
     "t1_mc1": {"id": "t1_mc1", "test_id": "test_1", "type": "mc", "points": 2,
                "text": "Was ist als Bankberater besonders wichtig?",
-               "options": ["Schweigepflicht beachten", "Kunden duzen", "Vermutungen aeussern"],
+               "options": ["Schweigepflicht beachten", "Kunden duzen", "Vermutungen äussern"],
                "correct": [0]},
     "t1_mc2": {"id": "t1_mc2", "test_id": "test_1", "type": "mc", "points": 2,
                "text": "Was ist der erste Schritt bei einem Ticket?",
@@ -261,25 +261,25 @@ SEED_QUESTIONS = {
     "t1_tf2": {"id": "t1_tf2", "test_id": "test_1", "type": "tf", "points": 2,
                "text": "Nach jedem Ticket muss dokumentiert werden.", "correct": True},
     "t1_tf3": {"id": "t1_tf3", "test_id": "test_1", "type": "tf", "points": 2,
-               "text": "Mitarbeiter duerfen Hausverbote unbegrenzt aussprechen.", "correct": False},
+               "text": "Mitarbeiter dürfen Hausverbote unbegrenzt aussprechen.", "correct": False},
     "t1_open1": {"id": "t1_open1", "test_id": "test_1", "type": "open", "points": 8,
                  "text": "Beschreibe den Ablauf eines Tickets."},
     "t1_open2": {"id": "t1_open2", "test_id": "test_1", "type": "open", "points": 8,
-                 "text": "Nenne vier Verhaltensregeln fuer Bankberater."},
+                 "text": "Nenne vier Verhaltensregeln für Bankberater."},
     "t1_praxis1": {"id": "t1_praxis1", "test_id": "test_1", "type": "praxis", "points": 12,
-                   "text": "Ein Kunde verhaelt sich aggressiv. Wie gehst du vor?"},
+                   "text": "Ein Kunde verhält sich aggressiv. Wie gehst du vor?"},
 
     "t2_mc1": {"id": "t2_mc1", "test_id": "test_2", "type": "mc", "points": 3,
                "text": "Was ist ein Kredit?",
                "options": [
-                   "Zeitweise Ueberlassung von Geld gegen Rueckzahlung mit Zinsen",
+                   "Zeitweise Ueberlassung von Geld gegen Rückzahlung mit Zinsen",
                    "Ein Geschenk der Bank an den Kunden",
                    "Eine Einzahlung des Kunden auf sein Konto",
                ], "correct": [0]},
     "t2_mc2": {"id": "t2_mc2", "test_id": "test_2", "type": "mc", "points": 3,
                "text": "Welche drei Kreditarten gibt es?",
                "options": [
-                   "Normaler Kredit, Ratendarlehen, Annuitaetendarlehen",
+                   "Normaler Kredit, Ratendarlehen, Annuitätendarlehen",
                    "Girokredit, Tagesgeld, Festgeld",
                    "Basiskredit, Expresskredit, Sofortkredit",
                ], "correct": [0]},
@@ -288,20 +288,20 @@ SEED_QUESTIONS = {
                "options": ["/kredit_eintragen", "/kredit_erstellen", "/kredit_anlegen"],
                "correct": [0]},
     "t2_tf1": {"id": "t2_tf1", "test_id": "test_2", "type": "tf", "points": 3,
-               "text": "Die Mindestlaufzeit betraegt 80%.", "correct": True},
+               "text": "Die Mindestlaufzeit beträgt 80%.", "correct": True},
     "t2_tf2": {"id": "t2_tf2", "test_id": "test_2", "type": "tf", "points": 3,
-               "text": "Nach vollstaendiger Tilgung schliesst der Kredit automatisch.",
+               "text": "Nach vollständiger Tilgung schliesst der Kredit automatisch.",
                "correct": True},
     "t2_tf3": {"id": "t2_tf3", "test_id": "test_2", "type": "tf", "points": 3,
-               "text": "Nach dem dritten Zahlungsverzug wird die gesamte Restschuld faellig.",
+               "text": "Nach dem dritten Zahlungsverzug wird die gesamte Restschuld fällig.",
                "correct": True},
     "t2_open1": {"id": "t2_open1", "test_id": "test_2", "type": "open", "points": 10,
                  "text": "Beschreibe den Ablauf einer Kreditvergabe."},
     "t2_open2": {"id": "t2_open2", "test_id": "test_2", "type": "open", "points": 10,
-                 "text": "Erklaere das Mahnverfahren."},
+                 "text": "Erkläre das Mahnverfahren."},
     "t2_praxis1": {"id": "t2_praxis1", "test_id": "test_2", "type": "praxis", "points": 12,
-                   "text": "Ein Kunde moechte seinen Kredit nach 50% der Laufzeit vollstaendig "
-                           "zurueckzahlen. Wie reagierst du?"},
+                   "text": "Ein Kunde möchte seinen Kredit nach 50% der Laufzeit vollständig "
+                           "zurückzahlen. Wie reagierst du?"},
 }
 
 DEFAULT_DB = {
@@ -322,7 +322,7 @@ DEFAULT_DB = {
 
 
 # ---------------------------------------------------------------------------
-# JSON-Datenbank (atomare Schreibvorgaenge)
+# JSON-Datenbank (atomare Schreibvorgänge)
 # ---------------------------------------------------------------------------
 
 def db_path(name):
@@ -347,7 +347,7 @@ def load_db(name):
 
 
 def update_db(name, mutate_fn):
-    """Laedt, wendet mutate_fn(data) an und speichert wieder -- unter Lock."""
+    """Lädt, wendet mutate_fn(data) an und speichert wieder -- unter Lock."""
     with DB_LOCK:
         path = db_path(name)
         if not path.exists():
@@ -623,17 +623,17 @@ def api_code_redeem():
     update_db("codes", mutate_codes)
 
     attempt_id = f"r_{int(datetime.now(timezone.utc).timestamp())}_{u['id']}"
-    started_at = datetime.now(timezone.utc)
-    deadline = started_at + timedelta(minutes=test["time_limit_minutes"])
 
     result = {
         "id": attempt_id, "user_id": u["id"], "username": u["username"],
         "test_id": test["id"], "test_title": test["title"], "code": code,
-        "answers": {}, "auto_score": 0, "manual_score": None, "total_score": None,
-        "max_points": test["max_points"], "percent": None, "grade": None,
-        "status": "in_bearbeitung", "graded_by": None, "comment": "",
-        "started_at": started_at.isoformat(), "deadline": deadline.isoformat(),
+        "time_limit_minutes": test["time_limit_minutes"],
+        "answers": {}, "auto_score": 0, "manual_score": None, "manual_points": {},
+        "total_score": None, "max_points": test["max_points"], "percent": None, "grade": None,
+        "status": "bereit", "graded_by": None, "comment": "",
+        "started_at": None, "deadline": None,
         "submitted_at": None, "graded_at": None, "released": False,
+        "viewed_at": None,
     }
 
     def mutate_results(r):
@@ -665,11 +665,45 @@ def api_attempt(attempt_id):
     r = results.get(attempt_id)
     if not r or r["user_id"] != u["id"]:
         return jsonify({"error": "not_found"}), 404
-    return jsonify({
-        "id": r["id"], "test_id": r["test_id"], "test_title": r["test_title"],
-        "status": r["status"], "deadline": r["deadline"], "answers": r["answers"],
-        "questions": public_questions_for(r["test_id"]) if r["status"] == "in_bearbeitung" else [],
-    })
+    if r["status"] == "bereit":
+        return jsonify({
+            "id": r["id"], "test_id": r["test_id"], "test_title": r["test_title"],
+            "status": "bereit", "time_limit_minutes": r["time_limit_minutes"],
+        })
+    if r["status"] == "in_bearbeitung":
+        return jsonify({
+            "id": r["id"], "test_id": r["test_id"], "test_title": r["test_title"],
+            "status": "in_bearbeitung", "deadline": r["deadline"], "answers": r["answers"],
+            "questions": public_questions_for(r["test_id"]),
+        })
+    return jsonify({"id": r["id"], "test_title": r["test_title"], "status": r["status"]})
+
+
+@app.route("/api/attempt/<attempt_id>/start", methods=["POST"])
+@require_role("mitarbeiter")
+def api_attempt_start(attempt_id):
+    u = request.current_user
+
+    def mutate(results):
+        r = results.get(attempt_id)
+        if not r or r["user_id"] != u["id"]:
+            return {"error": "not_found"}
+        if r["status"] != "bereit":
+            return {"error": "already_started"}
+        started_at = datetime.now(timezone.utc)
+        deadline = started_at + timedelta(minutes=r["time_limit_minutes"])
+        r["status"] = "in_bearbeitung"
+        r["started_at"] = started_at.isoformat()
+        r["deadline"] = deadline.isoformat()
+        return {
+            "ok": True, "deadline": r["deadline"], "test_title": r["test_title"],
+            "questions": public_questions_for(r["test_id"]),
+        }
+
+    out = update_db("results", mutate)
+    if "error" in out:
+        return jsonify(out), 400
+    return jsonify(out)
 
 
 @app.route("/api/attempt/<attempt_id>/save", methods=["POST"])
@@ -754,10 +788,40 @@ def api_attempt_submit(attempt_id):
 def api_results_mine():
     u = request.current_user
     results = load_db("results")
-    mine = [r for r in results.values() if r["user_id"] == u["id"] and r["status"] != "in_bearbeitung"]
+    mine = [r for r in results.values() if r["user_id"] == u["id"] and r["status"] not in ("in_bearbeitung", "bereit")]
     mine.sort(key=lambda r: r.get("submitted_at") or "", reverse=True)
     visible = [r for r in mine if r["released"]]
-    return jsonify(visible)
+    summary = [{
+        "id": r["id"], "test_id": r["test_id"], "test_title": r["test_title"],
+        "status": r["status"], "percent": r["percent"], "grade": r["grade"],
+        "total_score": r["total_score"], "max_points": r["max_points"],
+        "submitted_at": r["submitted_at"], "comment": r["comment"],
+        "viewed": r.get("viewed_at") is not None,
+    } for r in visible]
+    return jsonify(summary)
+
+
+@app.route("/api/results/mine/<result_id>/view", methods=["POST"])
+@require_role("mitarbeiter")
+def api_results_mine_view(result_id):
+    u = request.current_user
+    questions = load_db("questions")
+
+    def mutate(results):
+        r = results.get(result_id)
+        if not r or r["user_id"] != u["id"] or not r["released"]:
+            return {"error": "not_found"}
+        if r.get("viewed_at") is not None:
+            return {"error": "already_viewed"}
+        r["viewed_at"] = datetime.now(timezone.utc).isoformat()
+        qs = [questions[qid] for qid in load_db("tests")[r["test_id"]]["question_order"] if qid in questions]
+        view_expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+        return {"ok": True, "result": dict(r), "questions": qs, "view_expires_at": view_expires}
+
+    out = update_db("results", mutate)
+    if "error" in out:
+        return jsonify(out), 400 if out["error"] == "already_viewed" else 404
+    return jsonify(out)
 
 
 # ----- Bewertung (Fortbilder) -----
@@ -800,6 +864,7 @@ def api_result_grade(result_id):
             return {"error": "not_gradable"}
 
         manual_total = 0
+        manual_breakdown = {}
         for qid, q in questions.items():
             if q["test_id"] != r["test_id"] or q["type"] not in ("open", "praxis"):
                 continue
@@ -809,12 +874,14 @@ def api_result_grade(result_id):
             except (TypeError, ValueError):
                 pts = 0
             pts = max(0, min(pts, q["points"]))
+            manual_breakdown[qid] = pts
             manual_total += pts
 
         total = r["auto_score"] + manual_total
         pct = (total / r["max_points"]) * 100 if r["max_points"] else 0
 
         r["manual_score"] = manual_total
+        r["manual_points"] = manual_breakdown
         r["total_score"] = total
         r["percent"] = round(pct, 1)
         r["grade"] = grade_for_percent(pct)
@@ -958,7 +1025,7 @@ def api_admin_question_detail(qid):
 @require_role("fortbildungsleitung")
 def api_admin_results():
     results = load_db("results")
-    all_r = [r for r in results.values() if r["status"] != "in_bearbeitung"]
+    all_r = [r for r in results.values() if r["status"] not in ("in_bearbeitung", "bereit")]
     all_r.sort(key=lambda r: r.get("submitted_at") or "", reverse=True)
     return jsonify(all_r)
 
@@ -976,12 +1043,40 @@ def api_admin_settings():
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+OWNER_USER_ID = 1211683189186105434
+
+
+# ----- Components V2 Hilfsfunktionen (kein Embed, keine Emojis, farblose Container) -----
+
+def layout_message(title, *blocks):
+    """Baut eine Components-V2-Nachricht: '# Titel' + Separator + weitere Textblöcke,
+    jeweils durch einen Separator getrennt."""
+    view = discord.ui.LayoutView()
+    items = [discord.ui.TextDisplay(f"# {title}"), discord.ui.Separator()]
+    for i, block in enumerate(blocks):
+        if i > 0:
+            items.append(discord.ui.Separator())
+        items.append(discord.ui.TextDisplay(block))
+    container = discord.ui.Container(*items)
+    view.add_item(container)
+    return view
+
+
+async def send_layout(interaction, title, *blocks, followup=False):
+    view = layout_message(title, *blocks)
+    if followup:
+        await interaction.followup.send(view=view, ephemeral=True)
+    else:
+        await interaction.response.send_message(view=view, ephemeral=True)
+
+
+# ----- Backup -----
 
 async def do_backup(reason="manuell"):
     settings = load_db("settings")
     channel_id = settings.get("backup_channel_id")
     if not channel_id:
-        return False, "Kein Backup-Kanal konfiguriert. Bitte zuerst /setup ausfuehren."
+        return False, "Kein Backup-Kanal konfiguriert. Bitte zuerst /setup ausführen."
     try:
         channel = bot.get_channel(int(channel_id)) or await bot.fetch_channel(int(channel_id))
     except discord.HTTPException:
@@ -998,9 +1093,17 @@ async def do_backup(reason="manuell"):
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"backup_{ts}.zip"
-    stamp = datetime.now(timezone.utc).strftime("%d.%m.%Y %H:%M UTC")
-    await channel.send(content=f"Backup ({reason}) - {stamp}",
-                        file=discord.File(buf, filename=filename))
+    stamp = datetime.now(timezone.utc).strftime("%A, %d. %B %Y um %H:%M UTC")
+    is_auto = "automatisch" in reason
+    title = "Automatisches Datenbank-Backup" if is_auto else "Manuelles Datenbank-Backup"
+
+    blocks = [
+        "Die Datenbank wurde als ZIP-Archiv gesichert.",
+        f"**Zeitpunkt:** {stamp}\n**Datei:** `{filename}`",
+        "Nächstes Backup in 24 Stunden" if is_auto else "Das nächste automatische Backup folgt in 24 Stunden.",
+    ]
+    view = layout_message(title, *blocks)
+    await channel.send(view=view, file=discord.File(buf, filename=filename))
     log_event("backup", reason=reason, filename=filename)
     return True, filename
 
@@ -1021,24 +1124,21 @@ async def on_ready():
         auto_backup_loop.start()
 
 
-def is_fortbildungsleitung():
+def is_owner():
+    """Alle Befehle sind ausschliesslich für den konfigurierten Discord-User nutzbar."""
     async def predicate(interaction: discord.Interaction) -> bool:
-        settings = load_db("settings")
-        role_id = settings.get("fortbildungsleitung_role_id")
-        if not role_id or not isinstance(interaction.user, discord.Member):
-            return False
-        return any(str(r.id) == role_id for r in interaction.user.roles)
+        return interaction.user.id == OWNER_USER_ID
     return app_commands.check(predicate)
 
 
-@bot.tree.command(name="setup", description="Konfiguriert Rollen und Backup-Kanal fuer HHB Fortbildungszentrum")
+@bot.tree.command(name="setup", description="Konfiguriert Rollen und Backup-Kanal für HHB Fortbildungszentrum")
 @app_commands.describe(
     fortbildungsleitung="Rolle der Fortbildungsleitung",
     fortbilder="Rolle der Fortbilder",
     mitarbeiter="Rolle der Mitarbeiter",
-    backup_kanal="Textkanal fuer Backups",
+    backup_kanal="Textkanal für Backups",
 )
-@app_commands.checks.has_permissions(manage_guild=True)
+@is_owner()
 async def setup_cmd(
     interaction: discord.Interaction,
     fortbildungsleitung: discord.Role,
@@ -1054,40 +1154,39 @@ async def setup_cmd(
         settings["backup_channel_id"] = str(backup_kanal.id)
 
     update_db("settings", mutate)
-    await interaction.response.send_message(
-        f"Einstellungen gespeichert.\n"
-        f"Fortbildungsleitung: {fortbildungsleitung.mention}\n"
-        f"Fortbilder: {fortbilder.mention}\n"
-        f"Mitarbeiter: {mitarbeiter.mention}\n"
-        f"Backup-Kanal: {backup_kanal.mention}",
-        ephemeral=True,
+    await send_layout(
+        interaction, "Einstellungen gespeichert",
+        f"**Fortbildungsleitung:** {fortbildungsleitung.mention}\n"
+        f"**Fortbilder:** {fortbilder.mention}\n"
+        f"**Mitarbeiter:** {mitarbeiter.mention}\n"
+        f"**Backup-Kanal:** {backup_kanal.mention}",
     )
 
 
 @bot.tree.command(name="backup", description="Erstellt sofort ein Backup der Datenbank")
-@is_fortbildungsleitung()
+@is_owner()
 async def backup_cmd(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     ok, msg = await do_backup(reason="manuell")
     if ok:
-        await interaction.followup.send(f"Backup erstellt: `{msg}`", ephemeral=True)
+        await send_layout(interaction, "Backup erstellt", f"**Datei:** `{msg}`", followup=True)
     else:
-        await interaction.followup.send(f"Fehler: {msg}", ephemeral=True)
+        await send_layout(interaction, "Fehler", msg, followup=True)
 
 
 @bot.tree.command(name="reload", description="Stellt die Datenbank aus dem letzten Backup wieder her")
-@is_fortbildungsleitung()
+@is_owner()
 async def reload_cmd(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     settings = load_db("settings")
     channel_id = settings.get("backup_channel_id")
     if not channel_id:
-        await interaction.followup.send("Kein Backup-Kanal konfiguriert.", ephemeral=True)
+        await send_layout(interaction, "Fehler", "Kein Backup-Kanal konfiguriert.", followup=True)
         return
     try:
         channel = bot.get_channel(int(channel_id)) or await bot.fetch_channel(int(channel_id))
     except discord.HTTPException:
-        await interaction.followup.send("Backup-Kanal nicht erreichbar.", ephemeral=True)
+        await send_layout(interaction, "Fehler", "Backup-Kanal nicht erreichbar.", followup=True)
         return
 
     found = None
@@ -1101,7 +1200,7 @@ async def reload_cmd(interaction: discord.Interaction):
             break
 
     if not found:
-        await interaction.followup.send("Kein Backup gefunden.", ephemeral=True)
+        await send_layout(interaction, "Fehler", "Kein Backup gefunden.", followup=True)
         return
 
     data = await found.read()
@@ -1115,23 +1214,24 @@ async def reload_cmd(interaction: discord.Interaction):
                         with zf.open(name) as src, open(target, "wb") as dst:
                             dst.write(src.read())
     except zipfile.BadZipFile:
-        await interaction.followup.send("Backup-Datei ist beschaedigt.", ephemeral=True)
+        await send_layout(interaction, "Fehler", "Backup-Datei ist beschädigt.", followup=True)
         return
 
     log_event("reload", by=str(interaction.user.id), filename=found.filename)
-    await interaction.followup.send(f"Datenbank aus `{found.filename}` wiederhergestellt.", ephemeral=True)
+    await send_layout(interaction, "Datenbank wiederhergestellt", f"**Datei:** `{found.filename}`", followup=True)
 
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, (app_commands.MissingPermissions, app_commands.CheckFailure)):
-        msg = "Du hast keine Berechtigung fuer diesen Befehl."
+        title, body = "Keine Berechtigung", f"Dieser Befehl kann nur von <@{OWNER_USER_ID}> ausgeführt werden."
     else:
-        msg = f"Es ist ein Fehler aufgetreten: {error}"
+        title, body = "Fehler", f"Es ist ein Fehler aufgetreten: {error}"
+    view = layout_message(title, body)
     if interaction.response.is_done():
-        await interaction.followup.send(msg, ephemeral=True)
+        await interaction.followup.send(view=view, ephemeral=True)
     else:
-        await interaction.response.send_message(msg, ephemeral=True)
+        await interaction.response.send_message(view=view, ephemeral=True)
 
 
 # ---------------------------------------------------------------------------

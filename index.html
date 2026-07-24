@@ -253,7 +253,7 @@ function errorMessage(code) {
   const map = {
     oauth: "Die Discord-Anmeldung ist fehlgeschlagen. Bitte erneut versuchen.",
     not_configured: "Der Bot wurde noch nicht per /setup konfiguriert.",
-    not_member: "Du bist nicht Mitglied des zugehoerigen Discord-Servers.",
+    not_member: "Du bist nicht Mitglied des zugehörigen Discord-Servers.",
     no_role: "Dir ist keine der konfigurierten Rollen zugewiesen.",
   };
   return map[code] || "Anmeldung fehlgeschlagen.";
@@ -291,7 +291,7 @@ function renderLogin() {
   const wrap = el("div", { class: "login-screen" }, [
     el("img", { src: LOGO_DATA_URI, class: "login-logo", alt: "Hamburger Heimat Bank" }),
     el("h1", { text: "HHB Fortbildungszentrum" }),
-    el("p", { text: "Fortbildungs- und Pruefungsportal der Hamburger Heimat Bank" }),
+    el("p", { text: "Fortbildungs- und Prüfungsportal der Hamburger Heimat Bank" }),
     state.loginError ? el("div", { class: "error-banner", text: state.loginError }) : null,
     el("a", { href: "/login" }, [
       el("button", { class: "btn", text: "Mit Discord anmelden" }),
@@ -390,8 +390,8 @@ async function tabFortbildungen(main) {
       const res = await api("/api/code/redeem", { method: "POST", body: JSON.stringify({ code: codeInput.value }) });
       startExam(res.attempt_id);
     } catch (e) {
-      const msgs = { invalid_code: "Ungueltiger Code.", code_used: "Dieser Code wurde bereits verwendet." };
-      codeErr.appendChild(el("div", { class: "error-banner", text: msgs[e.body && e.body.error] || "Fehler beim Einloesen des Codes." }));
+      const msgs = { invalid_code: "Ungültiger Code.", code_used: "Dieser Code wurde bereits verwendet." };
+      codeErr.appendChild(el("div", { class: "error-banner", text: msgs[e.body && e.body.error] || "Fehler beim Einlösen des Codes." }));
     }
   });
   const row = el("div", { class: "row" }, [codeInput, codeBtn]);
@@ -459,10 +459,125 @@ async function tabErgebnisse(main) {
       ]),
       el("p", { text: r.total_score + " / " + r.max_points + " Punkte (" + r.percent + " %)" }),
       el("p", { class: "muted", text: "Abgegeben am " + fmtDate(r.submitted_at) }),
-      r.comment ? el("p", { text: "Kommentar: " + r.comment }) : null,
     ]);
+    if (r.viewed) {
+      card.appendChild(el("p", { class: "muted", text: "Bereits einmalig angesehen - nicht mehr abrufbar." }));
+    } else {
+      const viewBtn = el("button", { class: "btn small", text: "Prüfung ansehen" });
+      viewBtn.addEventListener("click", () => confirmAndOpenMyResult(r.id, r.test_title));
+      card.appendChild(viewBtn);
+    }
     main.appendChild(card);
   });
+}
+
+function showModal(title, bodyText, okLabel, onOk, cancelLabel) {
+  const overlay = el("div", {
+    style: "position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px",
+  });
+  const box = el("div", { class: "card", style: "max-width:420px; width:100%" }, [
+    el("h3", { text: title }),
+    el("p", { text: bodyText }),
+  ]);
+  const btnRow = el("div", { class: "row", style: "margin-top:16px; justify-content:flex-end" });
+  if (cancelLabel) {
+    const cancelBtn = el("button", { class: "btn secondary", text: cancelLabel });
+    cancelBtn.addEventListener("click", () => overlay.remove());
+    btnRow.appendChild(cancelBtn);
+  }
+  const okBtn = el("button", { class: "btn", text: okLabel });
+  okBtn.addEventListener("click", () => { overlay.remove(); onOk(); });
+  btnRow.appendChild(okBtn);
+  box.appendChild(btnRow);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function confirmAndOpenMyResult(resultId, testTitle) {
+  showModal(
+    "Einmalige Ansicht",
+    "Du kannst dieses Ergebnis nur einmal ansehen - und maximal 15 Minuten lang. " +
+    "Sobald die Zeit abgelaufen ist oder du die Ansicht verlässt, kannst du sie nicht erneut öffnen.",
+    "Jetzt ansehen",
+    () => openMyResult(resultId, testTitle),
+    "Abbrechen",
+  );
+}
+
+let myResultTimer = null;
+
+async function openMyResult(resultId, testTitle) {
+  const main = document.getElementById("main");
+  let out;
+  try {
+    out = await api("/api/results/mine/" + resultId + "/view", { method: "POST" });
+  } catch (e) {
+    main.innerHTML = "";
+    main.appendChild(el("div", { class: "error-banner", text: "Dieses Ergebnis wurde bereits angesehen und ist nicht mehr abrufbar." }));
+    const back = el("button", { class: "btn secondary small", text: "Zurück" });
+    back.addEventListener("click", () => { state.tab = "ergebnisse"; loadTab(); });
+    main.appendChild(back);
+    return;
+  }
+
+  const r = out.result;
+  const questions = out.questions;
+  main.innerHTML = "";
+
+  function leave() {
+    if (myResultTimer) clearInterval(myResultTimer);
+    state.tab = "ergebnisse";
+    loadTab();
+  }
+
+  const back = el("button", { class: "btn secondary small", text: "< Zurück" });
+  back.addEventListener("click", leave);
+  const timerBadge = el("span", { class: "timer", style: "margin-left:10px" });
+  main.appendChild(el("div", { class: "row" }, [back, timerBadge]));
+
+  const passed = r.percent >= 60;
+  main.appendChild(el("div", { class: "card" }, [
+    el("div", { class: "row" }, [
+      el("h3", { text: testTitle }),
+      el("span", { class: "badge " + (passed ? "pass" : "fail"), text: (passed ? "Bestanden" : "Nicht bestanden") + " · Note " + r.grade }),
+    ]),
+    el("p", { text: r.total_score + " / " + r.max_points + " Punkte (" + r.percent + " %)" }),
+    r.comment ? el("p", { text: "Kommentar der Bewertung: " + r.comment }) : null,
+  ]));
+
+  questions.forEach(q => {
+    const given = r.answers[q.id];
+    const card = el("div", { class: "card" });
+    card.appendChild(el("div", { class: "qtext", text: q.text + " (" + q.points + " Punkte)" }));
+    if (q.type === "mc") {
+      const correctIdx = new Set(q.correct);
+      const givenIdx = new Set(Array.isArray(given) ? given : []);
+      q.options.forEach((opt, i) => {
+        card.appendChild(el("div", { class: "option-row", text: (givenIdx.has(i) ? "☑ " : "☐ ") + opt + (correctIdx.has(i) ? "  (richtig)" : "") }));
+      });
+    } else if (q.type === "tf") {
+      card.appendChild(el("p", { text: "Deine Antwort: " + (given === true ? "Richtig" : given === false ? "Falsch" : "keine Angabe") + " · Korrekt: " + (q.correct ? "Richtig" : "Falsch") }));
+    } else {
+      card.appendChild(el("p", { text: given || "(keine Antwort)" }));
+      const pts = (r.manual_points || {})[q.id];
+      card.appendChild(el("p", { class: "muted", text: "Vergebene Punkte: " + (pts !== undefined ? pts : "0") + " / " + q.points }));
+    }
+    main.appendChild(card);
+  });
+
+  const deadline = new Date(out.view_expires_at).getTime();
+  function tick() {
+    const remain = Math.max(0, deadline - Date.now());
+    const mins = Math.floor(remain / 60000);
+    const secs = Math.floor((remain % 60000) / 1000);
+    timerBadge.textContent = String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+    if (remain <= 0) {
+      clearInterval(myResultTimer);
+      leave();
+    }
+  }
+  tick();
+  myResultTimer = setInterval(tick, 1000);
 }
 
 // ---------------------------------------------------------------------
@@ -541,7 +656,7 @@ async function openGrading(resultId) {
   const questions = detail.questions;
   main.innerHTML = "";
 
-  const back = el("button", { class: "btn secondary small", text: "< Zurueck" });
+  const back = el("button", { class: "btn secondary small", text: "< Zurück" });
   back.addEventListener("click", () => loadTab());
   main.appendChild(back);
 
@@ -610,29 +725,138 @@ async function openGrading(resultId) {
 // Tab: Tests verwalten (Fortbildungsleitung)
 // ---------------------------------------------------------------------
 
+function buildContentEditor(initialContent) {
+  const data = JSON.parse(JSON.stringify(initialContent || []));
+  const wrap = el("div", { class: "content-editor" });
+
+  function renderAll() {
+    wrap.innerHTML = "";
+    data.forEach((chapter, ci) => {
+      const chapCard = el("div", { style: "border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:10px" });
+      const chapTitleInput = el("input", { type: "text", value: chapter.chapter || "" });
+      chapTitleInput.addEventListener("input", () => { chapter.chapter = chapTitleInput.value; });
+      chapCard.appendChild(el("label", { class: "field", text: "Kapitelname" }, [chapTitleInput]));
+
+      (chapter.sections || []).forEach((section, si) => {
+        const secWrap = el("div", { style: "margin:10px 0; padding-top:10px; border-top:1px solid var(--border)" });
+        const secTitleInput = el("input", { type: "text", value: section.title || "" });
+        secTitleInput.addEventListener("input", () => { section.title = secTitleInput.value; });
+        const secTextArea = el("textarea", {});
+        secTextArea.value = section.text || "";
+        secTextArea.addEventListener("input", () => { section.text = secTextArea.value; });
+        const removeSecBtn = el("button", { class: "btn secondary small", text: "Abschnitt entfernen" });
+        removeSecBtn.addEventListener("click", () => { chapter.sections.splice(si, 1); renderAll(); });
+        secWrap.appendChild(el("label", { class: "field", text: "Abschnittstitel" }, [secTitleInput]));
+        secWrap.appendChild(el("label", { class: "field", text: "Text" }, [secTextArea]));
+        secWrap.appendChild(removeSecBtn);
+        chapCard.appendChild(secWrap);
+      });
+
+      const addSecBtn = el("button", { class: "btn secondary small", text: "Abschnitt hinzufügen" });
+      const removeChapBtn = el("button", { class: "btn secondary small", text: "Kapitel entfernen" });
+      removeChapBtn.style.marginLeft = "8px";
+      addSecBtn.addEventListener("click", () => {
+        if (!chapter.sections) chapter.sections = [];
+        chapter.sections.push({ title: "", text: "" });
+        renderAll();
+      });
+      removeChapBtn.addEventListener("click", () => { data.splice(ci, 1); renderAll(); });
+
+      chapCard.appendChild(el("div", { style: "margin-top:8px" }, [addSecBtn, removeChapBtn]));
+      wrap.appendChild(chapCard);
+    });
+
+    const addChapBtn = el("button", { class: "btn secondary small", text: "Kapitel hinzufügen" });
+    addChapBtn.addEventListener("click", () => {
+      data.push({ chapter: "Neues Kapitel", sections: [] });
+      renderAll();
+    });
+    wrap.appendChild(addChapBtn);
+  }
+
+  renderAll();
+  return { node: wrap, getValue: () => data };
+}
+
 async function tabTests(main) {
   const [tests, questions] = await Promise.all([api("/api/admin/tests"), api("/api/admin/questions")]);
   main.innerHTML = "";
 
   Object.values(tests).forEach(t => {
     const card = el("div", { class: "card" });
+    const titleInput = el("input", { type: "text", value: t.title });
+    const timeInput = el("input", { type: "number", value: String(t.time_limit_minutes) });
+    const maxPointsInput = el("input", { type: "number", value: String(t.max_points), step: "1" });
+
+    const editForm = el("div", { style: "display:none; margin-top:12px" }, [
+      el("label", { class: "field", text: "Titel" }, [titleInput]),
+      el("div", { class: "grid-2" }, [
+        el("label", { class: "field", text: "Zeitlimit (Minuten)" }, [timeInput]),
+        el("label", { class: "field", text: "Maximalpunktzahl" }, [maxPointsInput]),
+      ]),
+    ]);
+
+    const contentEditor = buildContentEditor(t.content);
+    editForm.appendChild(el("label", { class: "field", text: "Lerninhalt" }, [contentEditor.node]));
+
+    const saveErr = el("div");
+    const saveBtn = el("button", { class: "btn small", text: "Speichern" });
+    saveBtn.addEventListener("click", async () => {
+      saveErr.innerHTML = "";
+      await api("/api/admin/tests/" + t.id, {
+        method: "PUT",
+        body: JSON.stringify({
+          title: titleInput.value,
+          time_limit_minutes: timeInput.value,
+          max_points: maxPointsInput.value,
+          content: contentEditor.getValue(),
+        }),
+      });
+      tabTests(main);
+    });
+    editForm.appendChild(saveErr);
+    editForm.appendChild(saveBtn);
+
+    const editBtn = el("button", { class: "btn secondary small", text: "Bearbeiten" });
+    editBtn.addEventListener("click", () => {
+      editForm.style.display = editForm.style.display === "none" ? "block" : "none";
+    });
+    const deleteBtn = el("button", { class: "btn secondary small", text: "Löschen" });
+    deleteBtn.addEventListener("click", async () => {
+      if (!confirm("Diese Fortbildung inkl. aller zugehörigen Fragen wirklich löschen?")) return;
+      await api("/api/admin/tests/" + t.id, { method: "DELETE" });
+      tabTests(main);
+    });
+
     card.appendChild(el("div", { class: "row" }, [
       el("h3", { text: t.title }),
       el("span", { class: "muted", text: t.time_limit_minutes + " Min. · " + t.max_points + " Pkt." }),
     ]));
+    card.appendChild(el("div", { class: "row" }, [editBtn, deleteBtn]));
+    card.appendChild(editForm);
 
-    const qList = el("div", { style: "margin-top:10px" });
+    const qList = el("div", { style: "margin-top:14px" });
     t.question_order.forEach(qid => {
       const q = questions[qid];
       if (!q) return;
-      qList.appendChild(el("div", { class: "list-item" }, [
-        el("span", { text: q.text }),
-        el("span", { class: "muted", text: q.type.toUpperCase() + " · " + q.points + " Pkt." }),
-      ]));
+      const item = el("div", { class: "list-item" });
+      item.appendChild(el("span", { text: q.text }));
+      item.appendChild(el("span", { class: "muted", text: q.type.toUpperCase() + " · " + q.points + " Pkt." }));
+      const qEditBtn = el("button", { class: "btn secondary small", text: "Bearbeiten" });
+      qEditBtn.addEventListener("click", () => openQuestionEditor(t.id, q));
+      const qDelBtn = el("button", { class: "btn secondary small", text: "Löschen" });
+      qDelBtn.addEventListener("click", async () => {
+        if (!confirm("Diese Frage wirklich löschen?")) return;
+        await api("/api/admin/questions/" + qid, { method: "DELETE" });
+        tabTests(main);
+      });
+      item.appendChild(qEditBtn);
+      item.appendChild(qDelBtn);
+      qList.appendChild(item);
     });
     card.appendChild(qList);
 
-    const addBtn = el("button", { class: "btn secondary small", text: "Frage hinzufuegen" });
+    const addBtn = el("button", { class: "btn secondary small", text: "Frage hinzufügen" });
     addBtn.style.marginTop = "10px";
     addBtn.addEventListener("click", () => openQuestionEditor(t.id));
     card.appendChild(addBtn);
@@ -643,47 +867,64 @@ async function tabTests(main) {
   const newCard = el("div", { class: "card" }, [el("h3", { text: "Neue Fortbildung anlegen" })]);
   const titleInput = el("input", { type: "text", placeholder: "Titel" });
   const timeInput = el("input", { type: "number", placeholder: "Zeitlimit (Minuten)", value: "30" });
+  const maxPointsInput = el("input", { type: "number", placeholder: "Maximalpunktzahl", value: "40" });
   const createBtn = el("button", { class: "btn", text: "Anlegen" });
   createBtn.addEventListener("click", async () => {
-    await api("/api/admin/tests", { method: "POST", body: JSON.stringify({ title: titleInput.value, time_limit_minutes: timeInput.value, content: [] }) });
+    await api("/api/admin/tests", {
+      method: "POST",
+      body: JSON.stringify({ title: titleInput.value, time_limit_minutes: timeInput.value, max_points: maxPointsInput.value, content: [] }),
+    });
     tabTests(main);
   });
   newCard.appendChild(el("label", { class: "field", text: "Titel" }, [titleInput]));
   newCard.appendChild(el("label", { class: "field", text: "Zeitlimit (Minuten)" }, [timeInput]));
+  newCard.appendChild(el("label", { class: "field", text: "Maximalpunktzahl" }, [maxPointsInput]));
   newCard.appendChild(createBtn);
   main.appendChild(newCard);
 }
 
-function openQuestionEditor(testId) {
+function openQuestionEditor(testId, existing) {
   const main = document.getElementById("main");
   main.innerHTML = "";
-  const back = el("button", { class: "btn secondary small", text: "< Zurueck" });
+  const back = el("button", { class: "btn secondary small", text: "< Zurück" });
   back.addEventListener("click", () => loadTab());
   main.appendChild(back);
 
-  const card = el("div", { class: "card" }, [el("h3", { text: "Neue Frage" })]);
+  const card = el("div", { class: "card" }, [el("h3", { text: existing ? "Frage bearbeiten" : "Neue Frage" })]);
   const typeSelect = el("select", {}, [
     el("option", { value: "mc", text: "Multiple Choice" }),
     el("option", { value: "tf", text: "Richtig / Falsch" }),
     el("option", { value: "open", text: "Offene Frage" }),
     el("option", { value: "praxis", text: "Praxisfrage" }),
   ]);
+  if (existing) {
+    typeSelect.value = existing.type;
+    typeSelect.disabled = true;
+  }
   const textInput = el("textarea", { placeholder: "Fragetext" });
-  const pointsInput = el("input", { type: "number", value: "2", min: "0", step: "0.5" });
+  textInput.value = existing ? existing.text : "";
+  const pointsInput = el("input", { type: "number", value: existing ? String(existing.points) : "2", min: "0", step: "0.5" });
   const optionsWrap = el("div");
 
   function renderOptions() {
     optionsWrap.innerHTML = "";
     if (typeSelect.value === "mc") {
-      const opts = [0, 1, 2].map(i => el("input", { type: "text", placeholder: "Option " + (i + 1) }));
-      opts.forEach((o, i) => optionsWrap.appendChild(el("label", { class: "field", text: "Option " + (i + 1) }, [o])));
+      const existingOpts = existing && existing.options ? existing.options : [];
+      const count = Math.max(3, existingOpts.length);
+      const opts = Array.from({ length: count }, (_, i) => el("input", { type: "text", placeholder: "Option " + (i + 1) }));
+      opts.forEach((o, i) => {
+        if (existingOpts[i] !== undefined) o.value = existingOpts[i];
+        optionsWrap.appendChild(el("label", { class: "field", text: "Option " + (i + 1) }, [o]));
+      });
       optionsWrap.dataset.kind = "mc";
       optionsWrap._opts = opts;
       const correctInput = el("input", { type: "text", placeholder: "Index der richtigen Option(en), z.B. 0 oder 0,2" });
+      if (existing && existing.correct) correctInput.value = existing.correct.join(",");
       optionsWrap.appendChild(el("label", { class: "field", text: "Richtige Option(en) - Index beginnend bei 0" }, [correctInput]));
       optionsWrap._correct = correctInput;
     } else if (typeSelect.value === "tf") {
       const sel = el("select", {}, [el("option", { value: "true", text: "Richtig" }), el("option", { value: "false", text: "Falsch" })]);
+      if (existing) sel.value = existing.correct ? "true" : "false";
       optionsWrap.appendChild(el("label", { class: "field", text: "Korrekte Antwort" }, [sel]));
       optionsWrap.dataset.kind = "tf";
       optionsWrap._tf = sel;
@@ -699,7 +940,7 @@ function openQuestionEditor(testId) {
   card.appendChild(el("label", { class: "field", text: "Punkte" }, [pointsInput]));
   card.appendChild(optionsWrap);
 
-  const saveBtn = el("button", { class: "btn", text: "Frage speichern" });
+  const saveBtn = el("button", { class: "btn", text: existing ? "Änderungen speichern" : "Frage speichern" });
   saveBtn.addEventListener("click", async () => {
     const body = { test_id: testId, type: typeSelect.value, text: textInput.value, points: pointsInput.value };
     if (optionsWrap.dataset.kind === "mc") {
@@ -708,7 +949,11 @@ function openQuestionEditor(testId) {
     } else if (optionsWrap.dataset.kind === "tf") {
       body.correct = optionsWrap._tf.value === "true";
     }
-    await api("/api/admin/questions", { method: "POST", body: JSON.stringify(body) });
+    if (existing) {
+      await api("/api/admin/questions/" + existing.id, { method: "PUT", body: JSON.stringify(body) });
+    } else {
+      await api("/api/admin/questions", { method: "POST", body: JSON.stringify(body) });
+    }
     state.tab = "tests";
     loadTab();
   });
@@ -737,12 +982,60 @@ async function tabAlleErgebnisse(main) {
       statusBadge,
     ]));
     card.appendChild(el("p", { class: "muted", text: "Abgegeben: " + fmtDate(r.submitted_at) }));
+    if (r.status === "bewertet") {
+      const openBtn = el("button", { class: "btn secondary small", text: "Details ansehen" });
+      openBtn.addEventListener("click", () => openAdminResultDetail(r.id));
+      card.appendChild(openBtn);
+    }
+    main.appendChild(card);
+  });
+}
+
+async function openAdminResultDetail(resultId) {
+  const main = document.getElementById("main");
+  const detail = await api("/api/results/" + resultId);
+  const r = detail.result;
+  const questions = detail.questions;
+  main.innerHTML = "";
+
+  const back = el("button", { class: "btn secondary small", text: "< Zurück" });
+  back.addEventListener("click", () => { state.tab = "alle-ergebnisse"; loadTab(); });
+  main.appendChild(back);
+
+  const passed = r.percent >= 60;
+  main.appendChild(el("div", { class: "card" }, [
+    el("div", { class: "row" }, [
+      el("h3", { text: r.username + " - " + r.test_title }),
+      el("span", { class: "badge " + (passed ? "pass" : "fail"), text: (passed ? "Bestanden" : "Nicht bestanden") + " · Note " + r.grade }),
+    ]),
+    el("p", { text: r.total_score + " / " + r.max_points + " Punkte (" + r.percent + " %) · automatisch: " + r.auto_score + " · manuell: " + r.manual_score }),
+    el("p", { class: "muted", text: "Abgegeben am " + fmtDate(r.submitted_at) + " · bewertet von " + (r.graded_by_name || "-") + " am " + fmtDate(r.graded_at) }),
+    r.comment ? el("p", { text: "Kommentar: " + r.comment }) : null,
+  ]));
+
+  questions.forEach(q => {
+    const given = r.answers[q.id];
+    const card = el("div", { class: "card" });
+    card.appendChild(el("div", { class: "qtext", text: q.text + " (" + q.points + " Punkte)" }));
+    if (q.type === "mc") {
+      const correctIdx = new Set(q.correct);
+      const givenIdx = new Set(Array.isArray(given) ? given : []);
+      q.options.forEach((opt, i) => {
+        card.appendChild(el("div", { class: "option-row", text: (givenIdx.has(i) ? "☑ " : "☐ ") + opt + (correctIdx.has(i) ? "  (richtig)" : "") }));
+      });
+    } else if (q.type === "tf") {
+      card.appendChild(el("p", { text: "Antwort: " + (given === true ? "Richtig" : given === false ? "Falsch" : "keine Angabe") + " · Korrekt: " + (q.correct ? "Richtig" : "Falsch") }));
+    } else {
+      card.appendChild(el("p", { text: given || "(keine Antwort)" }));
+      const pts = (r.manual_points || {})[q.id];
+      card.appendChild(el("p", { class: "muted", text: "Vergebene Punkte: " + (pts !== undefined ? pts : "0") + " / " + q.points }));
+    }
     main.appendChild(card);
   });
 }
 
 // ---------------------------------------------------------------------
-// Pruefungsansicht
+// Prüfungsansicht
 // ---------------------------------------------------------------------
 
 let examTimer = null;
@@ -762,32 +1055,54 @@ function renderExamShell() {
 async function loadExam() {
   const root = document.getElementById("exam-root");
   const attempt = await api("/api/attempt/" + state.examAttemptId);
-  if (attempt.status !== "in_bearbeitung") {
+
+  if (attempt.status === "bereit") {
     root.innerHTML = "";
     root.appendChild(el("div", { class: "login-screen" }, [
-      el("h1", { text: "Test bereits abgegeben" }),
-      el("button", { class: "btn", onclick: backToApp, text: "Zurueck zum Portal" }),
+      el("h1", { text: attempt.test_title }),
+      el("p", { text: "Dies ist eine Prüfung. Du hast dafür " + attempt.time_limit_minutes + " Minuten Zeit. " +
+                       "Die Zeit beginnt zu laufen, sobald du auf OK klickst." }),
+      el("button", {
+        class: "btn", text: "OK, Prüfung starten",
+        onclick: async () => {
+          const started = await api("/api/attempt/" + state.examAttemptId + "/start", { method: "POST" });
+          renderExamQuestions(started.test_title, started.deadline, started.questions, {});
+        },
+      }),
     ]));
     return;
   }
 
-  const answers = Object.assign({}, attempt.answers);
+  if (attempt.status === "in_bearbeitung") {
+    renderExamQuestions(attempt.test_title, attempt.deadline, attempt.questions, attempt.answers);
+    return;
+  }
+
+  root.innerHTML = "";
+  root.appendChild(el("div", { class: "login-screen" }, [
+    el("h1", { text: "Test bereits abgegeben" }),
+    el("button", { class: "btn", onclick: backToApp, text: "Zurück zum Portal" }),
+  ]));
+}
+
+function renderExamQuestions(testTitle, deadlineIso, questionList, initialAnswers) {
+  const root = document.getElementById("exam-root");
+  const answers = Object.assign({}, initialAnswers);
 
   root.innerHTML = "";
   const header = el("header", {}, [
-    el("div", { class: "brand", text: attempt.test_title }),
+    el("div", { class: "brand", text: testTitle }),
     el("div", { class: "timer", id: "exam-timer", text: "--:--" }),
   ]);
   root.appendChild(header);
 
   const main = el("main");
-  attempt.questions.forEach(q => {
+  questionList.forEach(q => {
     const card = el("div", { class: "card question" });
     card.appendChild(el("div", { class: "qtext", text: q.text }));
     card.appendChild(el("div", { class: "points-tag", text: q.points + " Punkte" }));
 
     if (q.type === "mc") {
-      const singleCorrect = true; // UI erlaubt Mehrfachauswahl, Backend prueft exakte Menge
       q.options.forEach((opt, i) => {
         const cb = el("input", { type: "checkbox" });
         cb.checked = Array.isArray(answers[q.id]) && answers[q.id].includes(i);
@@ -845,7 +1160,7 @@ async function loadExam() {
 
   setInterval(() => doSave(true), 15000);
 
-  const deadline = new Date(attempt.deadline).getTime();
+  const deadline = new Date(deadlineIso).getTime();
   function tick() {
     const remain = Math.max(0, deadline - Date.now());
     const mins = Math.floor(remain / 60000);
