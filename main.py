@@ -1048,11 +1048,18 @@ OWNER_USER_ID = 1211683189186105434
 
 # ----- Components V2 Hilfsfunktionen (kein Embed, keine Emojis, farblose Container) -----
 
-def layout_message(title, *blocks):
-    """Baut eine Components-V2-Nachricht: '# Titel' + Separator + weitere Textblöcke,
-    jeweils durch einen Separator getrennt."""
+def layout_message(title, *blocks, file_ref=None):
+    """Baut eine Components-V2-Nachricht: optional eine Datei-Vorschau ganz oben,
+    dann '# Titel' + Separator + weitere Textblöcke, jeweils durch einen Separator
+    getrennt. file_ref ist der Dateiname eines im selben discord.File-Anhang
+    mitgeschickten Attachments (Components V2 zeigt Anhänge sonst nicht an)."""
     view = discord.ui.LayoutView()
-    items = [discord.ui.TextDisplay(f"# {title}"), discord.ui.Separator()]
+    items = []
+    if file_ref:
+        items.append(discord.ui.File(f"attachment://{file_ref}"))
+        items.append(discord.ui.Separator())
+    items.append(discord.ui.TextDisplay(f"# {title}"))
+    items.append(discord.ui.Separator())
     for i, block in enumerate(blocks):
         if i > 0:
             items.append(discord.ui.Separator())
@@ -1102,7 +1109,7 @@ async def do_backup(reason="manuell"):
         f"**Zeitpunkt:** {stamp}\n**Datei:** `{filename}`",
         "Nächstes Backup in 24 Stunden" if is_auto else "Das nächste automatische Backup folgt in 24 Stunden.",
     ]
-    view = layout_message(title, *blocks)
+    view = layout_message(title, *blocks, file_ref=filename)
     await channel.send(view=view, file=discord.File(buf, filename=filename))
     log_event("backup", reason=reason, filename=filename)
     return True, filename
