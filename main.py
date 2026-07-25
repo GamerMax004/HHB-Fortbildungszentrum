@@ -11,6 +11,7 @@ Benötigte Umgebungsvariablen:
   PORT                    optional, Standard 8080
 """
 
+import asyncio
 import io
 import json
 import os
@@ -150,6 +151,8 @@ SEED_TESTS = {
         ],
         "question_order": ["t1_mc1", "t1_mc2", "t1_mc3", "t1_tf1", "t1_tf2", "t1_tf3",
                             "t1_open1", "t1_open2", "t1_praxis1"],
+        "reward_role_id": "",
+        "prerequisite_test_id": None,
     },
     "test_2": {
         "id": "test_2",
@@ -241,6 +244,8 @@ SEED_TESTS = {
         ],
         "question_order": ["t2_mc1", "t2_mc2", "t2_mc3", "t2_tf1", "t2_tf2", "t2_tf3",
                             "t2_open1", "t2_open2", "t2_praxis1"],
+        "reward_role_id": "",
+        "prerequisite_test_id": "test_1",
     },
 }
 
@@ -316,6 +321,7 @@ DEFAULT_DB = {
         "fortbilder_role_id": "",
         "mitarbeiter_role_id": "",
         "backup_channel_id": "",
+        "review_channel_id": "",
     },
     "logs": [],
 }
@@ -431,6 +437,55 @@ def determine_role(member_role_ids):
     if settings.get("mitarbeiter_role_id") and settings["mitarbeiter_role_id"] in role_ids:
         return "mitarbeiter"
     return None
+
+
+def bot_add_role(guild_id, user_id, role_id):
+    """Vergibt eine Discord-Rolle an einen Server-Member (z.B. nach bestandener Fortbildung)."""
+    if not guild_id or not role_id:
+        return False
+    headers = {"Authorization": f"Bot {DISCORD_BOT_TOKEN}"}
+    try:
+        r = requests.put(f"{DISCORD_API}/guilds/{guild_id}/members/{user_id}/roles/{role_id}",
+                          headers=headers, timeout=10)
+        return r.status_code in (200, 204)
+    except requests.RequestException:
+        return False
+
+
+def bot_send_dm(user_id, content):
+    """Schickt einem Discord-User eine Direktnachricht per REST-API."""
+    headers = {"Authorization": f"Bot {DISCORD_BOT_TOKEN}", "Content-Type": "application/json"}
+    try:
+        r = requests.post(f"{DISCORD_API}/users/@me/channels",
+                           json={"recipient_id": str(user_id)}, headers=headers, timeout=10)
+        if r.status_code not in (200, 201):
+            return False
+        channel_id = r.json()["id"]
+        r2 = requests.post(f"{DISCORD_API}/channels/{channel_id}/messages",
+                            json={"content": content}, headers=headers, timeout=10)
+        return r2.status_code in (200, 201)
+    except requests.RequestException:
+        return False
+
+
+def bot_send_channel_message(channel_id, content):
+    if not channel_id:
+        return False
+    headers = {"Authorization": f"Bot {DISCORD_BOT_TOKEN}", "Content-Type": "application/json"}
+    try:
+        r = requests.post(f"{DISCORD_API}/channels/{channel_id}/messages",
+                           json={"content": content}, headers=headers, timeout=10)
+        return r.status_code in (200, 201)
+    except requests.RequestException:
+        return False
+
+
+def has_passed(results, user_id, test_id):
+    return any(
+        r["user_id"] == user_id and r["test_id"] == test_id
+        and r["status"] == "bewertet" and (r.get("percent") or 0) >= PASS_PERCENT
+        for r in results.values()
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -615,6 +670,14 @@ def api_code_redeem():
     if not test:
         return jsonify({"error": "test_missing"}), 400
 
+    prereq_id = test.get("prerequisite_test_id")
+    if prereq_id:
+        results = load_db("results")
+        if not has_passed(results, u["id"], prereq_id):
+            prereq_test = tests.get(prereq_id)
+            prereq_title = prereq_test["title"] if prereq_test else prereq_id
+            return jsonify({"error": "prerequisite_not_met", "prerequisite_title": prereq_title}), 400
+
     def mutate_codes(c):
         c[code]["used"] = True
         c[code]["used_by"] = u["id"]
@@ -629,6 +692,7 @@ def api_code_redeem():
         "test_id": test["id"], "test_title": test["title"], "code": code,
         "time_limit_minutes": test["time_limit_minutes"],
         "answers": {}, "auto_score": 0, "manual_score": None, "manual_points": {},
+        "question_comments": {},
         "total_score": None, "max_points": test["max_points"], "percent": None, "grade": None,
         "status": "bereit", "graded_by": None, "comment": "",
         "started_at": None, "deadline": None,
@@ -774,12 +838,39 @@ def api_attempt_submit(attempt_id):
             r["status"] = "bewertet"
             r["graded_at"] = r["submitted_at"]
             r["released"] = True
-        return {"ok": True, "status": r["status"]}
+        return {
+            "ok": True, "status": r["status"], "user_id": r["user_id"], "test_id": r["test_id"],
+            "test_title": r["test_title"], "username": r["username"],
+            "percent": r.get("percent"), "grade": r.get("grade"),
+        }
 
     out = update_db("results", mutate)
     if "error" in out:
         return jsonify(out), 400
     log_event("test_submitted", user_id=u["id"], attempt_id=attempt_id)
+
+    settings = load_db("settings")
+    if out["status"] == "eingereicht":
+        fortbilder_role = settings.get("fortbilder_role_id")
+        review_channel = settings.get("review_channel_id")
+        if review_channel and fortbilder_role:
+            bot_send_channel_message(
+                review_channel,
+                f"<@&{fortbilder_role}> Neue Prüfung wartet auf Bewertung: "
+                f"**{out['username']}** – {out['test_title']}",
+            )
+    elif out["status"] == "bewertet":
+        tests = load_db("tests")
+        test = tests.get(out["test_id"], {})
+        passed = (out.get("percent") or 0) >= PASS_PERCENT
+        if passed and test.get("reward_role_id") and settings.get("guild_id"):
+            bot_add_role(settings["guild_id"], out["user_id"], test["reward_role_id"])
+        bot_send_dm(
+            out["user_id"],
+            f"Deine Prüfung \"{out['test_title']}\" wurde bewertet: Note {out['grade']} "
+            f"({out['percent']}%). Schau im Portal vorbei, um die Details anzusehen.",
+        )
+
     return jsonify(out)
 
 
@@ -853,6 +944,7 @@ def api_result_grade(result_id):
     u = request.current_user
     body = request.get_json(force=True, silent=True) or {}
     manual_points = body.get("manual_points", {})
+    question_comments = body.get("question_comments", {})
     comment = body.get("comment", "")
     questions = load_db("questions")
 
@@ -865,6 +957,7 @@ def api_result_grade(result_id):
 
         manual_total = 0
         manual_breakdown = {}
+        comment_breakdown = {}
         for qid, q in questions.items():
             if q["test_id"] != r["test_id"] or q["type"] not in ("open", "praxis"):
                 continue
@@ -876,12 +969,16 @@ def api_result_grade(result_id):
             pts = max(0, min(pts, q["points"]))
             manual_breakdown[qid] = pts
             manual_total += pts
+            note = (question_comments.get(qid) or "").strip()
+            if note:
+                comment_breakdown[qid] = note
 
         total = r["auto_score"] + manual_total
         pct = (total / r["max_points"]) * 100 if r["max_points"] else 0
 
         r["manual_score"] = manual_total
         r["manual_points"] = manual_breakdown
+        r["question_comments"] = comment_breakdown
         r["total_score"] = total
         r["percent"] = round(pct, 1)
         r["grade"] = grade_for_percent(pct)
@@ -891,12 +988,28 @@ def api_result_grade(result_id):
         r["graded_at"] = datetime.now(timezone.utc).isoformat()
         r["comment"] = comment
         r["released"] = True
-        return {"ok": True}
+        return {
+            "ok": True, "user_id": r["user_id"], "test_id": r["test_id"],
+            "test_title": r["test_title"], "percent": r["percent"], "grade": r["grade"],
+        }
 
     out = update_db("results", mutate)
     if "error" in out:
         return jsonify(out), 400
     log_event("test_graded", grader_id=u["id"], result_id=result_id)
+
+    settings = load_db("settings")
+    tests = load_db("tests")
+    test = tests.get(out["test_id"], {})
+    passed = (out.get("percent") or 0) >= PASS_PERCENT
+    if passed and test.get("reward_role_id") and settings.get("guild_id"):
+        bot_add_role(settings["guild_id"], out["user_id"], test["reward_role_id"])
+    bot_send_dm(
+        out["user_id"],
+        f"Deine Prüfung \"{out['test_title']}\" wurde bewertet: Note {out['grade']} "
+        f"({out['percent']}%). Schau im Portal vorbei, um die Details anzusehen.",
+    )
+
     return jsonify(out)
 
 
@@ -915,6 +1028,8 @@ def api_admin_tests():
         "max_points": int(body.get("max_points", 0)),
         "content": body.get("content", []),
         "question_order": body.get("question_order", []),
+        "reward_role_id": (body.get("reward_role_id") or "").strip(),
+        "prerequisite_test_id": body.get("prerequisite_test_id") or None,
     }
 
     def mutate(tests):
@@ -946,6 +1061,10 @@ def api_admin_test_detail(test_id):
             t["content"] = body["content"]
         if "question_order" in body:
             t["question_order"] = body["question_order"]
+        if "reward_role_id" in body:
+            t["reward_role_id"] = (body.get("reward_role_id") or "").strip()
+        if "prerequisite_test_id" in body:
+            t["prerequisite_test_id"] = body.get("prerequisite_test_id") or None
         return {"ok": True}
 
     out = update_db("tests", mutate)
@@ -1028,6 +1147,34 @@ def api_admin_results():
     all_r = [r for r in results.values() if r["status"] not in ("in_bearbeitung", "bereit")]
     all_r.sort(key=lambda r: r.get("submitted_at") or "", reverse=True)
     return jsonify(all_r)
+
+
+@app.route("/api/admin/stats")
+@require_role("fortbildungsleitung")
+def api_admin_stats():
+    results = load_db("results")
+    tests = load_db("tests")
+    graded = [r for r in results.values() if r["status"] == "bewertet"]
+
+    by_test = {}
+    for r in graded:
+        by_test.setdefault(r["test_id"], []).append(r)
+
+    stats = []
+    for test_id, rs in by_test.items():
+        percents = [r["percent"] for r in rs if r.get("percent") is not None]
+        passed = sum(1 for p in percents if p >= PASS_PERCENT)
+        total = len(percents)
+        stats.append({
+            "test_id": test_id,
+            "test_title": tests.get(test_id, {}).get("title", test_id),
+            "attempts": total,
+            "avg_percent": round(sum(percents) / total, 1) if total else None,
+            "pass_rate": round(passed / total * 100, 1) if total else None,
+            "fail_rate": round((total - passed) / total * 100, 1) if total else None,
+        })
+    stats.sort(key=lambda s: s["test_title"])
+    return jsonify(stats)
 
 
 @app.route("/api/admin/settings")
@@ -1138,12 +1285,13 @@ def is_owner():
     return app_commands.check(predicate)
 
 
-@bot.tree.command(name="setup", description="Konfiguriert Rollen und Backup-Kanal für HHB Fortbildungszentrum")
+@bot.tree.command(name="setup", description="Konfiguriert Rollen und Kanäle für HHB Fortbildungszentrum")
 @app_commands.describe(
     fortbildungsleitung="Rolle der Fortbildungsleitung",
     fortbilder="Rolle der Fortbilder",
     mitarbeiter="Rolle der Mitarbeiter",
     backup_kanal="Textkanal für Backups",
+    bewertungs_kanal="Textkanal, in dem die Fortbilder-Rolle bei offenen Bewertungen gepingt wird (optional)",
 )
 @is_owner()
 async def setup_cmd(
@@ -1152,6 +1300,7 @@ async def setup_cmd(
     fortbilder: discord.Role,
     mitarbeiter: discord.Role,
     backup_kanal: discord.TextChannel,
+    bewertungs_kanal: discord.TextChannel = None,
 ):
     def mutate(settings):
         settings["guild_id"] = str(interaction.guild_id)
@@ -1159,6 +1308,7 @@ async def setup_cmd(
         settings["fortbilder_role_id"] = str(fortbilder.id)
         settings["mitarbeiter_role_id"] = str(mitarbeiter.id)
         settings["backup_channel_id"] = str(backup_kanal.id)
+        settings["review_channel_id"] = str(bewertungs_kanal.id) if bewertungs_kanal else ""
 
     update_db("settings", mutate)
     await send_layout(
@@ -1166,7 +1316,39 @@ async def setup_cmd(
         f"**Fortbildungsleitung:** {fortbildungsleitung.mention}\n"
         f"**Fortbilder:** {fortbilder.mention}\n"
         f"**Mitarbeiter:** {mitarbeiter.mention}\n"
-        f"**Backup-Kanal:** {backup_kanal.mention}",
+        f"**Backup-Kanal:** {backup_kanal.mention}\n"
+        f"**Bewertungs-Kanal:** {bewertungs_kanal.mention if bewertungs_kanal else 'nicht gesetzt'}",
+    )
+
+
+async def test_autocomplete(interaction: discord.Interaction, current: str):
+    tests = load_db("tests")
+    matches = [
+        app_commands.Choice(name=t["title"], value=tid)
+        for tid, t in tests.items()
+        if current.lower() in t["title"].lower()
+    ]
+    return matches[:25]
+
+
+@bot.tree.command(name="testrolle", description="Legt fest, welche Rolle bei bestandener Fortbildung vergeben wird")
+@app_commands.describe(test="Die Fortbildung", rolle="Rolle, die bei Bestehen vergeben wird")
+@app_commands.autocomplete(test=test_autocomplete)
+@is_owner()
+async def testrolle_cmd(interaction: discord.Interaction, test: str, rolle: discord.Role):
+    tests = load_db("tests")
+    if test not in tests:
+        await send_layout(interaction, "Fehler", "Diese Fortbildung wurde nicht gefunden.")
+        return
+
+    def mutate(tests_db):
+        if test in tests_db:
+            tests_db[test]["reward_role_id"] = str(rolle.id)
+
+    update_db("tests", mutate)
+    await send_layout(
+        interaction, "Rolle verknüpft",
+        f"Wer **{tests[test]['title']}** besteht, erhält automatisch {rolle.mention}.",
     )
 
 
