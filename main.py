@@ -41,6 +41,9 @@ DISCORD_REDIRECT_URI = os.environ["DISCORD_REDIRECT_URI"]
 FLASK_SECRET_KEY = os.environ.get("FLASK_SECRET_KEY") or os.urandom(32).hex()
 PORT = int(os.environ.get("PORT", 8080))
 
+# Basis-URL des Webportals, für Link-Buttons in Bot-Nachrichten (aus der Redirect-URI abgeleitet)
+PUBLIC_URL = DISCORD_REDIRECT_URI[: -len("/callback")] if DISCORD_REDIRECT_URI.endswith("/callback") else DISCORD_REDIRECT_URI
+
 DISCORD_API = "https://discord.com/api/v10"
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -452,8 +455,26 @@ def bot_add_role(guild_id, user_id, role_id):
         return False
 
 
-def bot_send_dm(user_id, content):
-    """Schickt einem Discord-User eine Direktnachricht per REST-API."""
+def build_components_v2_payload(title, body_lines, link_url=None, link_label="Im Portal ansehen"):
+    """Baut den rohen REST-JSON-Payload einer Components-V2-Nachricht (Titel + Textblöcke
+    in einem Container, optional ein Link-Button darunter)."""
+    container_components = [{"type": 10, "content": f"# {title}"}, {"type": 14}]
+    for i, line in enumerate(body_lines):
+        if i > 0:
+            container_components.append({"type": 14})
+        container_components.append({"type": 10, "content": line})
+
+    components = [{"type": 17, "components": container_components}]
+    if link_url:
+        components.append({
+            "type": 1,
+            "components": [{"type": 2, "style": 5, "label": link_label, "url": link_url}],
+        })
+    return {"flags": 1 << 15, "components": components}
+
+
+def bot_send_dm(user_id, title, body_lines, link_url=None, link_label="Im Portal ansehen"):
+    """Schickt einem Discord-User eine Direktnachricht (Components V2) per REST-API."""
     headers = {"Authorization": f"Bot {DISCORD_BOT_TOKEN}", "Content-Type": "application/json"}
     try:
         r = requests.post(f"{DISCORD_API}/users/@me/channels",
@@ -461,20 +482,22 @@ def bot_send_dm(user_id, content):
         if r.status_code not in (200, 201):
             return False
         channel_id = r.json()["id"]
+        payload = build_components_v2_payload(title, body_lines, link_url, link_label)
         r2 = requests.post(f"{DISCORD_API}/channels/{channel_id}/messages",
-                            json={"content": content}, headers=headers, timeout=10)
+                            json=payload, headers=headers, timeout=10)
         return r2.status_code in (200, 201)
     except requests.RequestException:
         return False
 
 
-def bot_send_channel_message(channel_id, content):
+def bot_send_channel_message(channel_id, title, body_lines, link_url=None, link_label="Im Portal ansehen"):
     if not channel_id:
         return False
     headers = {"Authorization": f"Bot {DISCORD_BOT_TOKEN}", "Content-Type": "application/json"}
+    payload = build_components_v2_payload(title, body_lines, link_url, link_label)
     try:
         r = requests.post(f"{DISCORD_API}/channels/{channel_id}/messages",
-                           json={"content": content}, headers=headers, timeout=10)
+                           json=payload, headers=headers, timeout=10)
         return r.status_code in (200, 201)
     except requests.RequestException:
         return False
@@ -856,8 +879,10 @@ def api_attempt_submit(attempt_id):
         if review_channel and fortbilder_role:
             bot_send_channel_message(
                 review_channel,
-                f"<@&{fortbilder_role}> Neue Prüfung wartet auf Bewertung: "
-                f"**{out['username']}** – {out['test_title']}",
+                "Neue Prüfung wartet auf Bewertung",
+                [f"<@&{fortbilder_role}>", f"**{out['username']}** hat **{out['test_title']}** eingereicht."],
+                link_url=PUBLIC_URL,
+                link_label="Zur Bewertung",
             )
     elif out["status"] == "bewertet":
         tests = load_db("tests")
@@ -867,8 +892,10 @@ def api_attempt_submit(attempt_id):
             bot_add_role(settings["guild_id"], out["user_id"], test["reward_role_id"])
         bot_send_dm(
             out["user_id"],
-            f"Deine Prüfung \"{out['test_title']}\" wurde bewertet: Note {out['grade']} "
-            f"({out['percent']}%). Schau im Portal vorbei, um die Details anzusehen.",
+            "Deine Prüfung wurde bewertet",
+            [f"**{out['test_title']}**\nNote {out['grade']} ({out['percent']}%)"],
+            link_url=PUBLIC_URL,
+            link_label="Ergebnis ansehen",
         )
 
     return jsonify(out)
@@ -1006,8 +1033,10 @@ def api_result_grade(result_id):
         bot_add_role(settings["guild_id"], out["user_id"], test["reward_role_id"])
     bot_send_dm(
         out["user_id"],
-        f"Deine Prüfung \"{out['test_title']}\" wurde bewertet: Note {out['grade']} "
-        f"({out['percent']}%). Schau im Portal vorbei, um die Details anzusehen.",
+        "Deine Prüfung wurde bewertet",
+        [f"**{out['test_title']}**\nNote {out['grade']} ({out['percent']}%)"],
+        link_url=PUBLIC_URL,
+        link_label="Ergebnis ansehen",
     )
 
     return jsonify(out)
@@ -1285,40 +1314,105 @@ def is_owner():
     return app_commands.check(predicate)
 
 
-@bot.tree.command(name="setup", description="Konfiguriert Rollen und Kanäle für HHB Fortbildungszentrum")
-@app_commands.describe(
-    fortbildungsleitung="Rolle der Fortbildungsleitung",
-    fortbilder="Rolle der Fortbilder",
-    mitarbeiter="Rolle der Mitarbeiter",
-    backup_kanal="Textkanal für Backups",
-    bewertungs_kanal="Textkanal, in dem die Fortbilder-Rolle bei offenen Bewertungen gepingt wird (optional)",
-)
-@is_owner()
-async def setup_cmd(
-    interaction: discord.Interaction,
-    fortbildungsleitung: discord.Role,
-    fortbilder: discord.Role,
-    mitarbeiter: discord.Role,
-    backup_kanal: discord.TextChannel,
-    bewertungs_kanal: discord.TextChannel = None,
-):
-    def mutate(settings):
-        settings["guild_id"] = str(interaction.guild_id)
-        settings["fortbildungsleitung_role_id"] = str(fortbildungsleitung.id)
-        settings["fortbilder_role_id"] = str(fortbilder.id)
-        settings["mitarbeiter_role_id"] = str(mitarbeiter.id)
-        settings["backup_channel_id"] = str(backup_kanal.id)
-        settings["review_channel_id"] = str(bewertungs_kanal.id) if bewertungs_kanal else ""
+class SetupView(discord.ui.LayoutView):
+    def __init__(self, guild: discord.Guild):
+        super().__init__(timeout=300)
+        self.guild = guild
+        settings = load_db("settings")
+        self.picked = {
+            "fortbildungsleitung_role_id": settings.get("fortbildungsleitung_role_id") or None,
+            "fortbilder_role_id": settings.get("fortbilder_role_id") or None,
+            "mitarbeiter_role_id": settings.get("mitarbeiter_role_id") or None,
+            "backup_channel_id": settings.get("backup_channel_id") or None,
+            "review_channel_id": settings.get("review_channel_id") or None,
+        }
 
-    update_db("settings", mutate)
-    await send_layout(
-        interaction, "Einstellungen gespeichert",
-        f"**Fortbildungsleitung:** {fortbildungsleitung.mention}\n"
-        f"**Fortbilder:** {fortbilder.mention}\n"
-        f"**Mitarbeiter:** {mitarbeiter.mention}\n"
-        f"**Backup-Kanal:** {backup_kanal.mention}\n"
-        f"**Bewertungs-Kanal:** {bewertungs_kanal.mention if bewertungs_kanal else 'nicht gesetzt'}",
+    container = discord.ui.Container(
+        discord.ui.TextDisplay("# HHB Fortbildungszentrum – Einrichtung"),
+        discord.ui.Separator(),
+        discord.ui.TextDisplay(
+            "Wähle für jede Rolle bzw. jeden Kanal die passende Option aus und "
+            "klicke danach auf **Speichern**. Der Bewertungs-Kanal ist optional."
+        ),
     )
+
+    row_leitung = discord.ui.ActionRow()
+
+    @row_leitung.select(cls=discord.ui.RoleSelect, placeholder="Rolle: Fortbildungsleitung")
+    async def select_leitung(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        self.picked["fortbildungsleitung_role_id"] = str(select.values[0].id)
+        await interaction.response.defer()
+
+    row_fortbilder = discord.ui.ActionRow()
+
+    @row_fortbilder.select(cls=discord.ui.RoleSelect, placeholder="Rolle: Fortbilder")
+    async def select_fortbilder(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        self.picked["fortbilder_role_id"] = str(select.values[0].id)
+        await interaction.response.defer()
+
+    row_mitarbeiter = discord.ui.ActionRow()
+
+    @row_mitarbeiter.select(cls=discord.ui.RoleSelect, placeholder="Rolle: Mitarbeiter")
+    async def select_mitarbeiter(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        self.picked["mitarbeiter_role_id"] = str(select.values[0].id)
+        await interaction.response.defer()
+
+    row_backup = discord.ui.ActionRow()
+
+    @row_backup.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text],
+                        placeholder="Kanal: Backup")
+    async def select_backup(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
+        self.picked["backup_channel_id"] = str(select.values[0].id)
+        await interaction.response.defer()
+
+    row_review = discord.ui.ActionRow()
+
+    @row_review.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text],
+                        placeholder="Kanal: Bewertung (optional)")
+    async def select_review(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
+        self.picked["review_channel_id"] = str(select.values[0].id)
+        await interaction.response.defer()
+
+    row_save = discord.ui.ActionRow()
+
+    @row_save.button(label="Speichern", style=discord.ButtonStyle.primary)
+    async def save_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        required = ("fortbildungsleitung_role_id", "fortbilder_role_id", "mitarbeiter_role_id", "backup_channel_id")
+        if any(not self.picked.get(k) for k in required):
+            await interaction.response.send_message(
+                view=layout_message("Fehlende Auswahl", "Bitte wähle zuerst alle Pflichtfelder aus (alles außer dem Bewertungs-Kanal)."),
+                ephemeral=True,
+            )
+            return
+
+        def mutate(settings):
+            settings["guild_id"] = str(self.guild.id)
+            settings["fortbildungsleitung_role_id"] = self.picked["fortbildungsleitung_role_id"]
+            settings["fortbilder_role_id"] = self.picked["fortbilder_role_id"]
+            settings["mitarbeiter_role_id"] = self.picked["mitarbeiter_role_id"]
+            settings["backup_channel_id"] = self.picked["backup_channel_id"]
+            settings["review_channel_id"] = self.picked.get("review_channel_id") or ""
+
+        update_db("settings", mutate)
+        review = self.picked.get("review_channel_id")
+        await interaction.response.edit_message(
+            view=layout_message(
+                "Einstellungen gespeichert",
+                f"**Fortbildungsleitung:** <@&{self.picked['fortbildungsleitung_role_id']}>\n"
+                f"**Fortbilder:** <@&{self.picked['fortbilder_role_id']}>\n"
+                f"**Mitarbeiter:** <@&{self.picked['mitarbeiter_role_id']}>\n"
+                f"**Backup-Kanal:** <#{self.picked['backup_channel_id']}>\n"
+                f"**Bewertungs-Kanal:** " + (f"<#{review}>" if review else "nicht gesetzt"),
+            ),
+        )
+        self.stop()
+
+
+@bot.tree.command(name="setup", description="Öffnet die interaktive Einrichtung für Rollen und Kanäle")
+@is_owner()
+async def setup_cmd(interaction: discord.Interaction):
+    view = SetupView(interaction.guild)
+    await interaction.response.send_message(view=view, ephemeral=True)
 
 
 async def test_autocomplete(interaction: discord.Interaction, current: str):

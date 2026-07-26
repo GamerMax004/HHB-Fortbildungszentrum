@@ -38,16 +38,16 @@
     top: 0;
     z-index: 10;
   }
-  header .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
-  header .brand span { color: var(--accent); }
+  header .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; min-width: 0; }
+  header .brand span { color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   header .brand img { height: 32px; width: 32px; border-radius: 7px; flex-shrink: 0; }
   .login-logo { height: 96px; width: 96px; border-radius: 20px; margin-bottom: 18px; box-shadow: 0 6px 24px rgba(200,52,28,0.25); }
   header .user-box { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px 14px; font-size: 14px; color: var(--text-muted); }
-  @media (max-width: 480px) {
-    header { padding: 12px 16px; }
-    header .brand { font-size: 16px; gap: 8px; }
-    header .brand img { height: 28px; width: 28px; }
-    header .user-box { font-size: 13px; gap: 6px 10px; }
+  @media (max-width: 600px) {
+    header { padding: 12px 16px; flex-wrap: nowrap; }
+    header .brand { font-size: 14px; gap: 6px; flex-shrink: 1; }
+    header .brand img { height: 26px; width: 26px; }
+    header .user-box { font-size: 13px; gap: 6px 8px; flex-shrink: 0; }
   }
   .tabs-wrap { position: relative; background: var(--surface); border-bottom: 1px solid var(--border); }
   .tabs-wrap::after {
@@ -88,10 +88,11 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--surface);
+    color: var(--text);
     cursor: pointer;
     flex-shrink: 0;
   }
-  .menu-btn svg { width: 20px; height: 20px; }
+  .menu-btn svg { width: 20px; height: 20px; stroke: currentColor; }
   .mobile-menu { display: none; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 16px 14px; }
   .mobile-menu.open { display: block; }
   .mobile-menu .mm-user { font-size: 13px; color: var(--text-muted); padding: 8px 4px 12px; margin-bottom: 6px; border-bottom: 1px solid var(--border); }
@@ -215,21 +216,24 @@
     background: #FDEEEC;
     color: var(--accent);
   }
-  .question { border-bottom: 1px solid var(--border); padding: 18px 0; }
-  .question:last-child { border-bottom: none; }
   .question .qtext { font-weight: 600; margin-bottom: 10px; font-size: 14px; }
   .option-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    padding: 4px 2px;
+    font-size: 14px;
+  }
+  label.option-row {
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
     padding: 12px 14px;
     margin-bottom: 8px;
-    font-size: 14px;
     border: 1px solid var(--border);
     border-radius: 8px;
     transition: background 0.15s, border-color 0.15s;
   }
-  label.option-row { cursor: pointer; }
   label.option-row:hover { background: #FAFAFA; border-color: #D6D6D6; }
   label.option-row:has(input:checked) { border-color: var(--accent); background: #FDF3F1; }
   .points-tag { font-size: 12px; color: var(--text-muted); font-weight: 500; }
@@ -412,7 +416,7 @@ function renderShell() {
   const wrap = el("div");
 
   const menuBtn = el("button", { class: "menu-btn", "aria-label": "Menü öffnen" });
-  menuBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>';
+  menuBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>';
 
   wrap.appendChild(el("header", {}, [
     el("div", { class: "brand" }, [
@@ -740,6 +744,8 @@ async function tabCodes(main) {
   main.appendChild(card);
 
   const listCard = el("div", { class: "card" }, [el("h3", { text: "Meine erstellten Codes" })]);
+  const titleById = {};
+  trainings.forEach(t => { titleById[t.id] = t.title; });
   const entries = Object.entries(codes).sort((a, b) => (b[1].created_at || "").localeCompare(a[1].created_at || ""));
   if (!entries.length) {
     listCard.appendChild(el("div", { class: "empty", text: "Noch keine Codes erstellt." }));
@@ -747,7 +753,7 @@ async function tabCodes(main) {
     entries.forEach(([code, c]) => {
       listCard.appendChild(el("div", { class: "list-item" }, [
         el("span", {}, [el("code", { class: "code-pill", text: code })]),
-        el("span", { class: "muted", text: c.test_id }),
+        el("span", { class: "muted", text: titleById[c.test_id] || c.test_id }),
         el("span", { class: "badge " + (c.used ? "pending" : "pass"), text: c.used ? "Verwendet" : "Offen" }),
       ]));
     });
@@ -981,13 +987,19 @@ async function tabTests(main) {
       el("h3", { text: t.title }),
       el("span", { class: "muted", text: t.time_limit_minutes + " Min. · " + t.max_points + " Pkt." }),
     ]));
+    const infoBits = [];
     if (t.prerequisite_test_id && tests[t.prerequisite_test_id]) {
-      card.appendChild(el("p", { class: "muted", text: "Voraussetzung: " + tests[t.prerequisite_test_id].title + " muss bestanden sein" }));
+      infoBits.push("Voraussetzung: " + tests[t.prerequisite_test_id].title);
     }
     if (t.reward_role_id) {
-      card.appendChild(el("p", { class: "muted", text: "Bei Bestehen wird automatisch eine Discord-Rolle vergeben (per /testrolle konfiguriert)." }));
+      infoBits.push("vergibt bei Bestehen eine Discord-Rolle");
     }
-    card.appendChild(el("div", { class: "row" }, [editBtn, deleteBtn]));
+    if (infoBits.length) {
+      card.appendChild(el("p", { class: "muted", text: infoBits.join(" · ") }));
+    }
+    const actionRow = el("div", { class: "row" }, [editBtn, deleteBtn]);
+    actionRow.style.marginTop = "10px";
+    card.appendChild(actionRow);
     card.appendChild(editForm);
 
     const qList = el("div", { style: "margin-top:14px" });
