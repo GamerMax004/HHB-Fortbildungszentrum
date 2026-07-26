@@ -1377,6 +1377,25 @@ class SetupView(discord.ui.LayoutView):
         else:
             self.select_test.disabled = True
 
+    # Hinweis zur Struktur: Discord/discord.py serialisiert Auswahlmenüs und Buttons,
+    # die per @row.select()/@row.button() an eine ActionRow gebunden sind, nur dann
+    # korrekt, wenn diese ActionRow eine EIGENE, oberste Komponente der LayoutView ist.
+    # Werden dieselben ActionRows stattdessen als Kind-Elemente in einen Container
+    # gepackt, verliert die Instanz beim Rendern ihre Inhalte (leeres components-Array,
+    # von Discord mit einem Validierungsfehler abgelehnt). Der Text/Titel-Block bleibt
+    # daher in einem Container (rein statisch, keine Interaktion nötig), alle
+    # Auswahlmenüs und der Speichern-Button folgen direkt darunter als eigene Zeilen –
+    # optisch wirkt das als ein zusammenhängendes Panel, auch wenn es technisch zwei
+    # Ebenen sind.
+    header = discord.ui.Container(
+        discord.ui.TextDisplay("# HHB Fortbildungszentrum – Einrichtung"),
+        discord.ui.Separator(),
+        discord.ui.TextDisplay(
+            "Wähle für jede Rolle bzw. jeden Kanal die passende Option aus und "
+            "klicke danach auf **Speichern**. Bewertungs-Kanal und Testrolle sind optional."
+        ),
+    )
+
     row_leitung = discord.ui.ActionRow()
 
     @row_leitung.select(cls=discord.ui.RoleSelect, placeholder="Rolle: Fortbildungsleitung")
@@ -1413,6 +1432,13 @@ class SetupView(discord.ui.LayoutView):
     async def select_review(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
         self.picked["review_channel_id"] = str(select.values[0].id)
         await interaction.response.defer()
+
+    reward_header = discord.ui.Container(
+        discord.ui.Separator(),
+        discord.ui.TextDisplay(
+            "**Testrolle** (optional): Rolle, die bei Bestehen einer Fortbildung automatisch vergeben wird."
+        ),
+    )
 
     row_reward_test = discord.ui.ActionRow()
 
@@ -1482,26 +1508,6 @@ class SetupView(discord.ui.LayoutView):
             ),
         )
         self.stop()
-
-    container = discord.ui.Container(
-        discord.ui.TextDisplay("# HHB Fortbildungszentrum – Einrichtung"),
-        discord.ui.Separator(),
-        discord.ui.TextDisplay(
-            "Wähle für jede Rolle bzw. jeden Kanal die passende Option aus und "
-            "klicke danach auf **Speichern**. Bewertungs-Kanal und Testrolle sind optional."
-        ),
-        row_leitung,
-        row_fortbilder,
-        row_mitarbeiter,
-        row_backup,
-        row_review,
-        discord.ui.Separator(),
-        discord.ui.TextDisplay("**Testrolle** (optional): Rolle, die bei Bestehen einer Fortbildung automatisch vergeben wird."),
-        row_reward_test,
-        row_reward_role,
-        discord.ui.Separator(spacing=discord.SeparatorSpacing.large),
-        row_save,
-    )
 
 
 @bot.tree.command(name="setup", description="Öffnet die interaktive Einrichtung für Rollen, Kanäle und Testrollen")
