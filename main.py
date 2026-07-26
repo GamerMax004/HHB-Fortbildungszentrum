@@ -82,7 +82,7 @@ SEED_TESTS = {
         "id": "test_1",
         "title": "Fortbildung für Auszubildende",
         "time_limit_minutes": 25,
-        "max_points": 40,
+        "max_points": 53,
         "content": [
             {
                 "chapter": "Kapitel 1 - Allgemeines Wissen",
@@ -152,7 +152,8 @@ SEED_TESTS = {
                 ],
             },
         ],
-        "question_order": ["t1_mc1", "t1_mc2", "t1_mc3", "t1_tf1", "t1_tf2", "t1_tf3",
+        "question_order": ["t1_mc1", "t1_mc2", "t1_mc3", "t1_mc4", "t1_mc5", "t1_mc6",
+                            "t1_tf1", "t1_tf2", "t1_tf3", "t1_tf4", "t1_tf5",
                             "t1_open1", "t1_open2", "t1_praxis1"],
         "reward_role_id": "",
         "prerequisite_test_id": None,
@@ -161,7 +162,7 @@ SEED_TESTS = {
         "id": "test_2",
         "title": "Fortbildung für Kredite",
         "time_limit_minutes": 35,
-        "max_points": 50,
+        "max_points": 71,
         "content": [
             {
                 "chapter": "Kapitel 1 - Grundlagen des Kreditsystems",
@@ -245,8 +246,9 @@ SEED_TESTS = {
                 ],
             },
         ],
-        "question_order": ["t2_mc1", "t2_mc2", "t2_mc3", "t2_tf1", "t2_tf2", "t2_tf3",
-                            "t2_open1", "t2_open2", "t2_praxis1"],
+        "question_order": ["t2_mc1", "t2_mc2", "t2_mc3", "t2_mc4", "t2_mc5", "t2_mc6",
+                            "t2_tf1", "t2_tf2", "t2_tf3", "t2_tf4", "t2_tf5",
+                            "t2_open1", "t2_open2", "t2_open3", "t2_praxis1"],
         "reward_role_id": "",
         "prerequisite_test_id": "test_1",
     },
@@ -264,12 +266,30 @@ SEED_QUESTIONS = {
     "t1_mc3": {"id": "t1_mc3", "test_id": "test_1", "type": "mc", "points": 2,
                "text": "Wie werden Kunden angesprochen?",
                "options": ["Siezen", "Duzen"], "correct": [0]},
+    "t1_mc4": {"id": "t1_mc4", "test_id": "test_1", "type": "mc", "points": 3,
+               "text": "Wie lange wird nach /ticket requestclose der Timeout eingestellt?",
+               "options": ["1 Stunde", "6 Stunden", "12 Stunden", "24 Stunden"],
+               "correct": [2]},
+    "t1_mc5": {"id": "t1_mc5", "test_id": "test_1", "type": "mc", "points": 3,
+               "text": "Wo müssen Hausverbote dokumentiert werden?",
+               "options": ["#dokumentation", "#hausverbote", "#berater-handbuch"],
+               "correct": [1]},
+    "t1_mc6": {"id": "t1_mc6", "test_id": "test_1", "type": "mc", "points": 3,
+               "text": "Wie lange dürfen Mitarbeiter maximal selbst ein Hausverbot aussprechen?",
+               "options": ["3 Tage", "5 Tage", "7 Tage", "Unbegrenzt"],
+               "correct": [2]},
     "t1_tf1": {"id": "t1_tf1", "test_id": "test_1", "type": "tf", "points": 2,
                "text": "Jedes Ticket muss zuerst geclaimt werden.", "correct": True},
     "t1_tf2": {"id": "t1_tf2", "test_id": "test_1", "type": "tf", "points": 2,
                "text": "Nach jedem Ticket muss dokumentiert werden.", "correct": True},
     "t1_tf3": {"id": "t1_tf3", "test_id": "test_1", "type": "tf", "points": 2,
                "text": "Mitarbeiter dürfen Hausverbote unbegrenzt aussprechen.", "correct": False},
+    "t1_tf4": {"id": "t1_tf4", "test_id": "test_1", "type": "tf", "points": 2,
+               "text": "Man darf hinter dem Schalter hervorkommen, um einem Kunden am Automaten zu helfen.",
+               "correct": False},
+    "t1_tf5": {"id": "t1_tf5", "test_id": "test_1", "type": "tf", "points": 2,
+               "text": "Bei einem schwerwiegenden Verstoß muss die Leitungsebene kontaktiert werden.",
+               "correct": True},
     "t1_open1": {"id": "t1_open1", "test_id": "test_1", "type": "open", "points": 8,
                  "text": "Beschreibe den Ablauf eines Tickets."},
     "t1_open2": {"id": "t1_open2", "test_id": "test_1", "type": "open", "points": 8,
@@ -280,7 +300,7 @@ SEED_QUESTIONS = {
     "t2_mc1": {"id": "t2_mc1", "test_id": "test_2", "type": "mc", "points": 3,
                "text": "Was ist ein Kredit?",
                "options": [
-                   "Zeitweise Ueberlassung von Geld gegen Rückzahlung mit Zinsen",
+                   "Zeitweise Überlassung von Geld gegen Rückzahlung mit Zinsen",
                    "Ein Geschenk der Bank an den Kunden",
                    "Eine Einzahlung des Kunden auf sein Konto",
                ], "correct": [0]},
@@ -295,6 +315,18 @@ SEED_QUESTIONS = {
                "text": "Mit welchem Command wird ein Kredit eingetragen?",
                "options": ["/kredit_eintragen", "/kredit_erstellen", "/kredit_anlegen"],
                "correct": [0]},
+    "t2_mc4": {"id": "t2_mc4", "test_id": "test_2", "type": "mc", "points": 3,
+               "text": "Welche Kreditart eignet sich laut Vergleich besonders für Firmen?",
+               "options": ["Normaler Kredit", "Ratendarlehen", "Annuitätendarlehen"],
+               "correct": [1]},
+    "t2_mc5": {"id": "t2_mc5", "test_id": "test_2", "type": "mc", "points": 3,
+               "text": "Welche Kreditart eignet sich laut Vergleich besonders für Privatpersonen?",
+               "options": ["Normaler Kredit", "Ratendarlehen", "Annuitätendarlehen"],
+               "correct": [2]},
+    "t2_mc6": {"id": "t2_mc6", "test_id": "test_2", "type": "mc", "points": 3,
+               "text": "Wer ist für die Auszahlung eines Kredits zuständig?",
+               "options": ["Der Berater selbst", "Die Leitungsebene", "Die Auszahlungszuständigen", "Der Kunde"],
+               "correct": [2]},
     "t2_tf1": {"id": "t2_tf1", "test_id": "test_2", "type": "tf", "points": 3,
                "text": "Die Mindestlaufzeit beträgt 80%.", "correct": True},
     "t2_tf2": {"id": "t2_tf2", "test_id": "test_2", "type": "tf", "points": 3,
@@ -303,10 +335,18 @@ SEED_QUESTIONS = {
     "t2_tf3": {"id": "t2_tf3", "test_id": "test_2", "type": "tf", "points": 3,
                "text": "Nach dem dritten Zahlungsverzug wird die gesamte Restschuld fällig.",
                "correct": True},
+    "t2_tf4": {"id": "t2_tf4", "test_id": "test_2", "type": "tf", "points": 3,
+               "text": "Ein Kreditvertrag muss vom Kunden unterschrieben werden.",
+               "correct": True},
+    "t2_tf5": {"id": "t2_tf5", "test_id": "test_2", "type": "tf", "points": 3,
+               "text": "Nach der Mindestlaufzeit von 80% ist eine vollständige Rückzahlung ohne Aufschlag möglich.",
+               "correct": False},
     "t2_open1": {"id": "t2_open1", "test_id": "test_2", "type": "open", "points": 10,
                  "text": "Beschreibe den Ablauf einer Kreditvergabe."},
     "t2_open2": {"id": "t2_open2", "test_id": "test_2", "type": "open", "points": 10,
                  "text": "Erkläre das Mahnverfahren."},
+    "t2_open3": {"id": "t2_open3", "test_id": "test_2", "type": "open", "points": 6,
+                 "text": "Welche Informationen zeigt /kredit_info an?"},
     "t2_praxis1": {"id": "t2_praxis1", "test_id": "test_2", "type": "praxis", "points": 12,
                    "text": "Ein Kunde möchte seinen Kredit nach 50% der Laufzeit vollständig "
                            "zurückzahlen. Wie reagierst du?"},
@@ -1319,22 +1359,23 @@ class SetupView(discord.ui.LayoutView):
         super().__init__(timeout=300)
         self.guild = guild
         settings = load_db("settings")
+        self.tests = load_db("tests")
         self.picked = {
             "fortbildungsleitung_role_id": settings.get("fortbildungsleitung_role_id") or None,
             "fortbilder_role_id": settings.get("fortbilder_role_id") or None,
             "mitarbeiter_role_id": settings.get("mitarbeiter_role_id") or None,
             "backup_channel_id": settings.get("backup_channel_id") or None,
             "review_channel_id": settings.get("review_channel_id") or None,
+            "reward_test_id": None,
+            "reward_role_id": None,
         }
-
-    container = discord.ui.Container(
-        discord.ui.TextDisplay("# HHB Fortbildungszentrum – Einrichtung"),
-        discord.ui.Separator(),
-        discord.ui.TextDisplay(
-            "Wähle für jede Rolle bzw. jeden Kanal die passende Option aus und "
-            "klicke danach auf **Speichern**. Der Bewertungs-Kanal ist optional."
-        ),
-    )
+        if self.tests:
+            self.select_test.options = [
+                discord.SelectOption(label=t["title"][:100], value=tid)
+                for tid, t in self.tests.items()
+            ][:25]
+        else:
+            self.select_test.disabled = True
 
     row_leitung = discord.ui.ActionRow()
 
@@ -1373,6 +1414,21 @@ class SetupView(discord.ui.LayoutView):
         self.picked["review_channel_id"] = str(select.values[0].id)
         await interaction.response.defer()
 
+    row_reward_test = discord.ui.ActionRow()
+
+    @row_reward_test.select(cls=discord.ui.Select, placeholder="Testrolle: Fortbildung (optional)",
+                             options=[discord.SelectOption(label="Platzhalter", value="_")])
+    async def select_test(self, interaction: discord.Interaction, select: discord.ui.Select):
+        self.picked["reward_test_id"] = select.values[0]
+        await interaction.response.defer()
+
+    row_reward_role = discord.ui.ActionRow()
+
+    @row_reward_role.select(cls=discord.ui.RoleSelect, placeholder="Testrolle: Rolle bei Bestehen (optional)")
+    async def select_reward_role(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        self.picked["reward_role_id"] = str(select.values[0].id)
+        await interaction.response.defer()
+
     row_save = discord.ui.ActionRow()
 
     @row_save.button(label="Speichern", style=discord.ButtonStyle.primary)
@@ -1380,7 +1436,15 @@ class SetupView(discord.ui.LayoutView):
         required = ("fortbildungsleitung_role_id", "fortbilder_role_id", "mitarbeiter_role_id", "backup_channel_id")
         if any(not self.picked.get(k) for k in required):
             await interaction.response.send_message(
-                view=layout_message("Fehlende Auswahl", "Bitte wähle zuerst alle Pflichtfelder aus (alles außer dem Bewertungs-Kanal)."),
+                view=layout_message("Fehlende Auswahl", "Bitte wähle zuerst alle Pflichtfelder aus (alles außer Bewertungs-Kanal und Testrolle)."),
+                ephemeral=True,
+            )
+            return
+        reward_test = self.picked.get("reward_test_id")
+        reward_role = self.picked.get("reward_role_id")
+        if bool(reward_test) != bool(reward_role):
+            await interaction.response.send_message(
+                view=layout_message("Fehlende Auswahl", "Für die Testrolle bitte sowohl Fortbildung als auch Rolle auswählen (oder beides leer lassen)."),
                 ephemeral=True,
             )
             return
@@ -1394,6 +1458,17 @@ class SetupView(discord.ui.LayoutView):
             settings["review_channel_id"] = self.picked.get("review_channel_id") or ""
 
         update_db("settings", mutate)
+
+        reward_line = "nicht gesetzt"
+        if reward_test and reward_role:
+            def mutate_tests(tests_db):
+                if reward_test in tests_db:
+                    tests_db[reward_test]["reward_role_id"] = reward_role
+
+            update_db("tests", mutate_tests)
+            test_title = self.tests.get(reward_test, {}).get("title", reward_test)
+            reward_line = f"**{test_title}** → <@&{reward_role}>"
+
         review = self.picked.get("review_channel_id")
         await interaction.response.edit_message(
             view=layout_message(
@@ -1403,47 +1478,37 @@ class SetupView(discord.ui.LayoutView):
                 f"**Mitarbeiter:** <@&{self.picked['mitarbeiter_role_id']}>\n"
                 f"**Backup-Kanal:** <#{self.picked['backup_channel_id']}>\n"
                 f"**Bewertungs-Kanal:** " + (f"<#{review}>" if review else "nicht gesetzt"),
+                f"**Rolle bei Bestehen:** {reward_line}",
             ),
         )
         self.stop()
 
+    container = discord.ui.Container(
+        discord.ui.TextDisplay("# HHB Fortbildungszentrum – Einrichtung"),
+        discord.ui.Separator(),
+        discord.ui.TextDisplay(
+            "Wähle für jede Rolle bzw. jeden Kanal die passende Option aus und "
+            "klicke danach auf **Speichern**. Bewertungs-Kanal und Testrolle sind optional."
+        ),
+        row_leitung,
+        row_fortbilder,
+        row_mitarbeiter,
+        row_backup,
+        row_review,
+        discord.ui.Separator(),
+        discord.ui.TextDisplay("**Testrolle** (optional): Rolle, die bei Bestehen einer Fortbildung automatisch vergeben wird."),
+        row_reward_test,
+        row_reward_role,
+        discord.ui.Separator(spacing=discord.SeparatorSpacing.large),
+        row_save,
+    )
 
-@bot.tree.command(name="setup", description="Öffnet die interaktive Einrichtung für Rollen und Kanäle")
+
+@bot.tree.command(name="setup", description="Öffnet die interaktive Einrichtung für Rollen, Kanäle und Testrollen")
 @is_owner()
 async def setup_cmd(interaction: discord.Interaction):
     view = SetupView(interaction.guild)
     await interaction.response.send_message(view=view, ephemeral=True)
-
-
-async def test_autocomplete(interaction: discord.Interaction, current: str):
-    tests = load_db("tests")
-    matches = [
-        app_commands.Choice(name=t["title"], value=tid)
-        for tid, t in tests.items()
-        if current.lower() in t["title"].lower()
-    ]
-    return matches[:25]
-
-
-@bot.tree.command(name="testrolle", description="Legt fest, welche Rolle bei bestandener Fortbildung vergeben wird")
-@app_commands.describe(test="Die Fortbildung", rolle="Rolle, die bei Bestehen vergeben wird")
-@app_commands.autocomplete(test=test_autocomplete)
-@is_owner()
-async def testrolle_cmd(interaction: discord.Interaction, test: str, rolle: discord.Role):
-    tests = load_db("tests")
-    if test not in tests:
-        await send_layout(interaction, "Fehler", "Diese Fortbildung wurde nicht gefunden.")
-        return
-
-    def mutate(tests_db):
-        if test in tests_db:
-            tests_db[test]["reward_role_id"] = str(rolle.id)
-
-    update_db("tests", mutate)
-    await send_layout(
-        interaction, "Rolle verknüpft",
-        f"Wer **{tests[test]['title']}** besteht, erhält automatisch {rolle.mention}.",
-    )
 
 
 @bot.tree.command(name="backup", description="Erstellt sofort ein Backup der Datenbank")

@@ -126,6 +126,7 @@
   .card h3 { margin: 0 0 6px; font-size: 16px; }
   .card p { margin: 4px 0; color: var(--text-muted); font-size: 14px; }
   .row { display: flex; align-items: center; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap; }
+  .btn-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   button.btn {
     background: var(--accent);
     color: #fff;
@@ -173,8 +174,8 @@
   input[type=checkbox]:checked::after {
     content: "";
     position: absolute;
-    left: 6px; top: 2px;
-    width: 6px; height: 11px;
+    left: 7px; top: 3px;
+    width: 5px; height: 10px;
     border: solid #fff;
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
@@ -236,7 +237,7 @@
   }
   label.option-row:hover { background: #FAFAFA; border-color: #D6D6D6; }
   label.option-row:has(input:checked) { border-color: var(--accent); background: #FDF3F1; }
-  .points-tag { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+  .points-tag { font-size: 12px; color: var(--text-muted); font-weight: 500; white-space: nowrap; flex-shrink: 0; margin-left: 12px; }
   .badge {
     display: inline-block;
     font-size: 12px;
@@ -690,7 +691,11 @@ async function openMyResult(resultId, testTitle) {
         card.appendChild(el("div", { class: "option-row", text: (givenIdx.has(i) ? "☑ " : "☐ ") + opt + (correctIdx.has(i) ? "  (richtig)" : "") }));
       });
     } else if (q.type === "tf") {
-      card.appendChild(el("p", { text: "Deine Antwort: " + (given === true ? "Richtig" : given === false ? "Falsch" : "keine Angabe") + " · Korrekt: " + (q.correct ? "Richtig" : "Falsch") }));
+      [true, false].forEach(val => {
+        const isGiven = given === val;
+        const isCorrect = q.correct === val;
+        card.appendChild(el("div", { class: "option-row", text: (isGiven ? "☑ " : "☐ ") + (val ? "Richtig" : "Falsch") + (isCorrect ? "  (richtig)" : "") }));
+      });
     } else {
       card.appendChild(el("p", { text: given || "(keine Antwort)" }));
       const pts = (r.manual_points || {})[q.id];
@@ -821,8 +826,11 @@ async function openGrading(resultId) {
       });
       card.appendChild(el("p", { class: "muted", text: "Automatisch bewertet." }));
     } else if (q.type === "tf") {
-      const labels = { true: "Richtig", false: "Falsch" };
-      card.appendChild(el("p", { text: "Antwort: " + (given === true ? "Richtig" : given === false ? "Falsch" : "keine Angabe") + " · Korrekt: " + (q.correct ? "Richtig" : "Falsch") }));
+      [true, false].forEach(val => {
+        const isGiven = given === val;
+        const isCorrect = q.correct === val;
+        card.appendChild(el("div", { class: "option-row", text: (isGiven ? "☑ " : "☐ ") + (val ? "Richtig" : "Falsch") + (isCorrect ? "  (richtig)" : "") }));
+      });
       card.appendChild(el("p", { class: "muted", text: "Automatisch bewertet." }));
     } else {
       card.appendChild(el("p", { text: given || "(keine Antwort)" }));
@@ -997,7 +1005,7 @@ async function tabTests(main) {
     if (infoBits.length) {
       card.appendChild(el("p", { class: "muted", text: infoBits.join(" · ") }));
     }
-    const actionRow = el("div", { class: "row" }, [editBtn, deleteBtn]);
+    const actionRow = el("div", { class: "btn-group" }, [editBtn, deleteBtn]);
     actionRow.style.marginTop = "10px";
     card.appendChild(actionRow);
     card.appendChild(editForm);
@@ -1017,8 +1025,7 @@ async function tabTests(main) {
         await api("/api/admin/questions/" + qid, { method: "DELETE" });
         tabTests(main);
       });
-      item.appendChild(qEditBtn);
-      item.appendChild(qDelBtn);
+      item.appendChild(el("div", { class: "btn-group" }, [qEditBtn, qDelBtn]));
       qList.appendChild(item);
     });
     card.appendChild(qList);
@@ -1227,7 +1234,11 @@ async function openAdminResultDetail(resultId) {
         card.appendChild(el("div", { class: "option-row", text: (givenIdx.has(i) ? "☑ " : "☐ ") + opt + (correctIdx.has(i) ? "  (richtig)" : "") }));
       });
     } else if (q.type === "tf") {
-      card.appendChild(el("p", { text: "Antwort: " + (given === true ? "Richtig" : given === false ? "Falsch" : "keine Angabe") + " · Korrekt: " + (q.correct ? "Richtig" : "Falsch") }));
+      [true, false].forEach(val => {
+        const isGiven = given === val;
+        const isCorrect = q.correct === val;
+        card.appendChild(el("div", { class: "option-row", text: (isGiven ? "☑ " : "☐ ") + (val ? "Richtig" : "Falsch") + (isCorrect ? "  (richtig)" : "") }));
+      });
     } else {
       card.appendChild(el("p", { text: given || "(keine Antwort)" }));
       const pts = (r.manual_points || {})[q.id];
@@ -1304,8 +1315,10 @@ function renderExamQuestions(testTitle, deadlineIso, questionList, initialAnswer
   const main = el("main");
   questionList.forEach(q => {
     const card = el("div", { class: "card question" });
-    card.appendChild(el("div", { class: "qtext", text: q.text }));
-    card.appendChild(el("div", { class: "points-tag", text: q.points + " Punkte" }));
+    card.appendChild(el("div", { class: "row", style: "align-items:flex-start" }, [
+      el("div", { class: "qtext", text: q.text }),
+      el("span", { class: "points-tag", text: q.points + " Punkte" }),
+    ]));
 
     if (q.type === "mc") {
       q.options.forEach((opt, i) => {
