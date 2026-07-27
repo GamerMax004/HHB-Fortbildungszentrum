@@ -1355,6 +1355,8 @@ def is_owner():
 
 
 class SetupView(discord.ui.LayoutView):
+    MAX_REWARD_SLOTS = 4
+
     def __init__(self, guild: discord.Guild):
         super().__init__(timeout=300)
         self.guild = guild
@@ -1366,16 +1368,19 @@ class SetupView(discord.ui.LayoutView):
             "mitarbeiter_role_id": settings.get("mitarbeiter_role_id") or None,
             "backup_channel_id": settings.get("backup_channel_id") or None,
             "review_channel_id": settings.get("review_channel_id") or None,
-            "reward_test_id": None,
-            "reward_role_id": None,
         }
-        if self.tests:
-            self.select_test.options = [
-                discord.SelectOption(label=t["title"][:100], value=tid)
-                for tid, t in self.tests.items()
-            ][:25]
-        else:
-            self.select_test.disabled = True
+        self.reward_slots = list(self.tests.items())[: self.MAX_REWARD_SLOTS]
+        self.reward_picks = {}
+        reward_rows = [self.row_reward_1, self.row_reward_2, self.row_reward_3, self.row_reward_4]
+        reward_selects = [self.select_reward_1, self.select_reward_2, self.select_reward_3, self.select_reward_4]
+        for i, row in enumerate(reward_rows):
+            if i < len(self.reward_slots):
+                test_id, test = self.reward_slots[i]
+                reward_selects[i].placeholder = f"Rolle bei Bestehen: {test['title'][:70]}"
+            else:
+                reward_selects[i].placeholder = "Testrolle (kein weiterer Test vorhanden)"
+                reward_selects[i].disabled = True
+                row.children[0].disabled = True
 
     # Hinweis zur Struktur: Discord/discord.py serialisiert Auswahlmenüs und Buttons,
     # die per @row.select()/@row.button() an eine ActionRow gebunden sind, nur dann
@@ -1392,7 +1397,7 @@ class SetupView(discord.ui.LayoutView):
         discord.ui.Separator(),
         discord.ui.TextDisplay(
             "Wähle für jede Rolle bzw. jeden Kanal die passende Option aus und "
-            "klicke danach auf **Speichern**. Bewertungs-Kanal und Testrolle sind optional."
+            "klicke danach auf **Speichern**. Bewertungs-Kanal und Testrollen sind optional."
         ),
     )
 
@@ -1436,23 +1441,37 @@ class SetupView(discord.ui.LayoutView):
     reward_header = discord.ui.Container(
         discord.ui.Separator(),
         discord.ui.TextDisplay(
-            "**Testrolle** (optional): Rolle, die bei Bestehen einer Fortbildung automatisch vergeben wird."
+            "**Testrollen** (optional): Rolle, die bei Bestehen der jeweiligen Fortbildung "
+            "automatisch vergeben wird - für alle Fortbildungen gleichzeitig wählbar."
         ),
     )
 
-    row_reward_test = discord.ui.ActionRow()
+    row_reward_1 = discord.ui.ActionRow()
 
-    @row_reward_test.select(cls=discord.ui.Select, placeholder="Testrolle: Fortbildung (optional)",
-                             options=[discord.SelectOption(label="Platzhalter", value="_")])
-    async def select_test(self, interaction: discord.Interaction, select: discord.ui.Select):
-        self.picked["reward_test_id"] = select.values[0]
+    @row_reward_1.select(cls=discord.ui.RoleSelect, placeholder="Testrolle 1")
+    async def select_reward_1(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        self.reward_picks[0] = str(select.values[0].id)
         await interaction.response.defer()
 
-    row_reward_role = discord.ui.ActionRow()
+    row_reward_2 = discord.ui.ActionRow()
 
-    @row_reward_role.select(cls=discord.ui.RoleSelect, placeholder="Testrolle: Rolle bei Bestehen (optional)")
-    async def select_reward_role(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
-        self.picked["reward_role_id"] = str(select.values[0].id)
+    @row_reward_2.select(cls=discord.ui.RoleSelect, placeholder="Testrolle 2")
+    async def select_reward_2(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        self.reward_picks[1] = str(select.values[0].id)
+        await interaction.response.defer()
+
+    row_reward_3 = discord.ui.ActionRow()
+
+    @row_reward_3.select(cls=discord.ui.RoleSelect, placeholder="Testrolle 3")
+    async def select_reward_3(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        self.reward_picks[2] = str(select.values[0].id)
+        await interaction.response.defer()
+
+    row_reward_4 = discord.ui.ActionRow()
+
+    @row_reward_4.select(cls=discord.ui.RoleSelect, placeholder="Testrolle 4")
+    async def select_reward_4(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        self.reward_picks[3] = str(select.values[0].id)
         await interaction.response.defer()
 
     row_save = discord.ui.ActionRow()
@@ -1462,15 +1481,7 @@ class SetupView(discord.ui.LayoutView):
         required = ("fortbildungsleitung_role_id", "fortbilder_role_id", "mitarbeiter_role_id", "backup_channel_id")
         if any(not self.picked.get(k) for k in required):
             await interaction.response.send_message(
-                view=layout_message("Fehlende Auswahl", "Bitte wähle zuerst alle Pflichtfelder aus (alles außer Bewertungs-Kanal und Testrolle)."),
-                ephemeral=True,
-            )
-            return
-        reward_test = self.picked.get("reward_test_id")
-        reward_role = self.picked.get("reward_role_id")
-        if bool(reward_test) != bool(reward_role):
-            await interaction.response.send_message(
-                view=layout_message("Fehlende Auswahl", "Für die Testrolle bitte sowohl Fortbildung als auch Rolle auswählen (oder beides leer lassen)."),
+                view=layout_message("Fehlende Auswahl", "Bitte wähle zuerst alle Pflichtfelder aus (alles außer Bewertungs-Kanal und Testrollen)."),
                 ephemeral=True,
             )
             return
@@ -1485,15 +1496,19 @@ class SetupView(discord.ui.LayoutView):
 
         update_db("settings", mutate)
 
-        reward_line = "nicht gesetzt"
-        if reward_test and reward_role:
+        reward_lines = []
+        if self.reward_picks:
             def mutate_tests(tests_db):
-                if reward_test in tests_db:
-                    tests_db[reward_test]["reward_role_id"] = reward_role
+                for slot_index, role_id in self.reward_picks.items():
+                    test_id, test = self.reward_slots[slot_index]
+                    if test_id in tests_db:
+                        tests_db[test_id]["reward_role_id"] = role_id
 
             update_db("tests", mutate_tests)
-            test_title = self.tests.get(reward_test, {}).get("title", reward_test)
-            reward_line = f"**{test_title}** → <@&{reward_role}>"
+            for slot_index, role_id in self.reward_picks.items():
+                test_id, test = self.reward_slots[slot_index]
+                reward_lines.append(f"**{test['title']}** → <@&{role_id}>")
+        reward_text = "\n".join(reward_lines) if reward_lines else "nicht gesetzt"
 
         review = self.picked.get("review_channel_id")
         await interaction.response.edit_message(
@@ -1504,7 +1519,7 @@ class SetupView(discord.ui.LayoutView):
                 f"**Mitarbeiter:** <@&{self.picked['mitarbeiter_role_id']}>\n"
                 f"**Backup-Kanal:** <#{self.picked['backup_channel_id']}>\n"
                 f"**Bewertungs-Kanal:** " + (f"<#{review}>" if review else "nicht gesetzt"),
-                f"**Rolle bei Bestehen:** {reward_line}",
+                f"**Rolle(n) bei Bestehen:**\n{reward_text}",
             ),
         )
         self.stop()
