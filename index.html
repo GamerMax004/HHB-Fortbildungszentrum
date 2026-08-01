@@ -1001,9 +1001,6 @@ async function tabTests(main) {
     if (t.prerequisite_test_id && tests[t.prerequisite_test_id]) {
       infoBits.push("Voraussetzung: " + tests[t.prerequisite_test_id].title);
     }
-    if (t.reward_role_id) {
-      infoBits.push("vergibt bei Bestehen eine Discord-Rolle");
-    }
     if (infoBits.length) {
       card.appendChild(el("p", { class: "muted", text: infoBits.join(" · ") }));
     }
