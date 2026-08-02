@@ -1576,18 +1576,54 @@ async def reload_cmd(interaction: discord.Interaction):
         await send_layout(interaction, "Fehler", "Backup-Kanal nicht erreichbar.", followup=True)
         return
 
+    perms = channel.permissions_for(channel.guild.me) if channel.guild else None
+    if perms is not None and not perms.read_message_history:
+        await send_layout(
+            interaction, "Fehler",
+            f"Dem Bot fehlt die Berechtigung **Nachrichtenverlauf anzeigen** in <#{channel_id}>. "
+            "Ohne diese Berechtigung kann /reload keine vorhandenen Backups finden, auch wenn /backup "
+            "selbst weiterhin funktioniert (dafür reicht 'Nachrichten senden').",
+            followup=True,
+        )
+        return
+
     found = None
-    async for msg in channel.history(limit=100):
-        if msg.author.id == bot.user.id and msg.attachments:
-            for att in msg.attachments:
-                if att.filename.endswith(".zip"):
-                    found = att
-                    break
-        if found:
-            break
+    scanned = 0
+    bot_messages = 0
+    other_attachments = 0
+    try:
+        async for msg in channel.history(limit=200):
+            scanned += 1
+            if msg.author.id != bot.user.id:
+                continue
+            bot_messages += 1
+            if not msg.attachments:
+                continue
+            zip_att = next((a for a in msg.attachments if a.filename.endswith(".zip")), None)
+            if zip_att:
+                found = zip_att
+                break
+            other_attachments += len(msg.attachments)
+    except discord.Forbidden:
+        await send_layout(
+            interaction, "Fehler",
+            f"Dem Bot fehlt die Berechtigung **Nachrichtenverlauf anzeigen** in <#{channel_id}>.",
+            followup=True,
+        )
+        return
 
     if not found:
-        await send_layout(interaction, "Fehler", "Kein Backup gefunden.", followup=True)
+        await send_layout(
+            interaction, "Fehler",
+            f"Kein Backup gefunden.\n"
+            f"**Kanal:** <#{channel_id}>\n"
+            f"**Durchsuchte Nachrichten:** {scanned}\n"
+            f"**Davon vom Bot:** {bot_messages}\n"
+            f"**Andere Anhänge (kein .zip) gefunden:** {other_attachments}\n\n"
+            "Prüft, ob der eingestellte Backup-Kanal wirklich derjenige ist, in dem `/backup` seine "
+            "Nachrichten sendet, und ob ältere Backups eventuell schon aus dem Kanal gelöscht wurden.",
+            followup=True,
+        )
         return
 
     data = await found.read()
