@@ -584,19 +584,63 @@ def bot_send_channel_message(channel_id, title, body_lines, link_url=None, link_
         return False
 
 
+def send_new_exam_notification(review_channel_id, fortbilder_role_id):
+    """Schickt die 'NEUE PRÜFUNG!'-Nachricht in den Bewertungs-Kanal."""
+    bot_send_channel_message(
+        review_channel_id,
+        "NEUE PRÜFUNG!",
+        [
+            f"Sehr geehrte <@&{fortbilder_role_id}>,\n"
+            "\n"
+            "> eine neue Prüfung wurde eingereicht. Bitte bearbeitet diese so schnell wie möglich und "
+            "stellt sofern die Prüfung bestanden wurde eine Urkunde aus und sendet diese in den "
+            "entsprechenden Kanal.\n"
+            "\n"
+            "**Mit freundlichen Grüßen**\n~ HHB Fortbildungszentrum",
+        ],
+        link_url=PUBLIC_URL,
+        link_label="Fortbildungsportal",
+    )
+
+
 def send_result_dm(user_id, grade, percent):
     """Schickt die 'PRÜFUNGSERGEBNIS'-DM an einen Mitarbeiter, nachdem seine Prüfung bewertet wurde."""
     bot_send_dm(
         user_id,
         "PRÜFUNGSERGEBNIS",
         [
-            f"Sehr geehrter <@{user_id}>,",
-            "die Auswertung deiner Prüfung ist so eben erfolgt. Hier die Auswertung:\n"
-            f"- Note: **{grade}**\n"
-            f"- Punkte (in %): **{percent}%**\n"
-            "Du kannst dir deine Prüfung einmal für 15 Minuten im Fortbildungsportal nochmal anschauen, "
-            "wenn du das möchtest.",
-            "Mit freundlichen Grüßen\n~ HHB Fortbildungszentrum",
+            f"Sehr geehrter <@{user_id}>,\n"
+            "\n"
+            "> die Auswertung deiner Prüfung ist so eben erfolgt. Hier die Auswertung:\n"
+            f"> – Note: {grade}\n"
+            f"> – Punkte (in %): {percent}%\n"
+            "> Du kannst dir deine Prüfung __einmal für 15 Minuten__ im Fortbildungsportal nochmal "
+            "anschauen, wenn du das möchtest.\n"
+            "\n"
+            "**Mit freundlichen Grüßen**\n~ HHB Fortbildungszentrum",
+        ],
+        link_url=PUBLIC_URL,
+        link_label="Fortbildungsportal",
+    )
+
+
+def send_regrade_dm(user_id, grade, percent):
+    """Schickt die DM an einen Mitarbeiter, wenn die Fortbildungsleitung eine bereits bewertete
+    Prüfung nachträglich angepasst hat. Der Mitarbeiter erhält erneut 15 Minuten Einsicht."""
+    bot_send_dm(
+        user_id,
+        "PRÜFUNG NACHTRÄGLICH ANGEPASST",
+        [
+            f"Sehr geehrter <@{user_id}>,\n"
+            "\n"
+            "> die Bewertung deiner Prüfung wurde soeben durch die Fortbildungsleitung nachträglich "
+            "angepasst. Hier die aktualisierte Auswertung:\n"
+            f"> – Note: {grade}\n"
+            f"> – Punkte (in %): {percent}%\n"
+            "> Du kannst dir deine Prüfung __erneut für 15 Minuten__ im Fortbildungsportal anschauen, "
+            "wenn du das möchtest.\n"
+            "\n"
+            "**Mit freundlichen Grüßen**\n~ HHB Fortbildungszentrum",
         ],
         link_url=PUBLIC_URL,
         link_label="Fortbildungsportal",
@@ -977,19 +1021,7 @@ def api_attempt_submit(attempt_id):
         fortbilder_role = settings.get("fortbilder_role_id")
         review_channel = settings.get("review_channel_id")
         if review_channel and fortbilder_role:
-            bot_send_channel_message(
-                review_channel,
-                "NEUE PRÜFUNG!",
-                [
-                    f"Sehr geehrte <@&{fortbilder_role}>,",
-                    "eine neue Prüfung wurde eingereicht. Bitte bearbeitet diese so schnell wie möglich "
-                    "und stellt sofern die Prüfung bestanden wurde eine Urkunde aus und sendet diese in "
-                    "den entsprechenden Kanal.",
-                    "Mit freundlichen Grüßen\n~ HHB Fortbildungszentrum",
-                ],
-                link_url=PUBLIC_URL,
-                link_label="Fortbildungsportal",
-            )
+            send_new_exam_notification(review_channel, fortbilder_role)
     elif out["status"] == "bewertet":
         send_result_dm(out["user_id"], out["grade"], out["percent"])
 
@@ -1113,9 +1145,13 @@ def api_result_grade(result_id):
         r["graded_at"] = datetime.now(timezone.utc).isoformat()
         r["comment"] = comment
         r["released"] = True
+        if is_regrade:
+            # Mitarbeiter bekommt nach einer nachträglichen Anpassung erneut 15 Minuten Einsicht.
+            r["viewed_at"] = None
         return {
             "ok": True, "user_id": r["user_id"], "test_id": r["test_id"],
             "test_title": r["test_title"], "percent": r["percent"], "grade": r["grade"],
+            "is_regrade": is_regrade,
         }
 
     out = update_db("results", mutate)
@@ -1124,7 +1160,10 @@ def api_result_grade(result_id):
         return jsonify(out), status_code
     log_event("test_graded", grader_id=u["id"], result_id=result_id)
 
-    send_result_dm(out["user_id"], out["grade"], out["percent"])
+    if out["is_regrade"]:
+        send_regrade_dm(out["user_id"], out["grade"], out["percent"])
+    else:
+        send_result_dm(out["user_id"], out["grade"], out["percent"])
 
     return jsonify(out)
 
