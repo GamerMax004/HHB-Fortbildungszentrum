@@ -1406,7 +1406,8 @@ async def do_backup(reason="manuell"):
         "Nächstes Backup in 24 Stunden" if is_auto else "Das nächste automatische Backup folgt in 24 Stunden.",
     ]
     view = layout_message(title, *blocks)
-    await channel.send(view=view, file=discord.File(buf, filename=filename))
+    await channel.send(file=discord.File(buf, filename=filename))
+    await channel.send(view=view)
     log_event("backup", reason=reason, filename=filename)
     return True, filename
 
