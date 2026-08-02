@@ -289,11 +289,41 @@ SEED_QUESTIONS = {
                "text": "Bei einem schwerwiegenden Verstoß muss die Leitungsebene kontaktiert werden.",
                "correct": True},
     "t1_open1": {"id": "t1_open1", "test_id": "test_1", "type": "open", "points": 8,
-                 "text": "Beschreibe den Ablauf eines Tickets."},
+                 "text": "Beschreibe den Ablauf eines Tickets.",
+                 "grading_notes": [
+                     "Ticket wird über den Button 'Claim' geclaimt",
+                     "Kunde wird freundlich begrüßt",
+                     "es wird auf einen Zahlungslink gewartet (nicht nötig bei Auszahlungen)",
+                     "der jeweilige Befehl wird ausgeführt",
+                     "dem Kunden wird ein Screenshot als Arbeitsnachweis gesendet",
+                     "vor dem Schließen wird gefragt, ob noch etwas für den Kunden getan werden kann",
+                     "/ticket requestclose wird ausgeführt und 12 Stunden Timeout eingestellt",
+                     "die Arbeit wird abschließend in #dokumentation dokumentiert",
+                 ]},
     "t1_open2": {"id": "t1_open2", "test_id": "test_1", "type": "open", "points": 8,
-                 "text": "Nenne vier Verhaltensregeln für Bankberater."},
+                 "text": "Nenne vier Verhaltensregeln für Bankberater.",
+                 "grading_notes": [
+                     "vier beliebige, korrekte Regeln reichen aus, z. B.:",
+                     "das Handbuch in #berater-handbuch lesen",
+                     "die Schweigepflicht jederzeit beachten",
+                     "jederzeit freundlich gegenüber Kunden sein",
+                     "nur Dinge sagen, die man zu 100 % weiß",
+                     "niemals hinter den Schalter kommen, auch nicht bei Hilfe am Automaten",
+                     "immer in der Nähe des Panik-Buttons bleiben",
+                     "Türen mit Kegeln abschließen",
+                     "Kunden immer siezen und gleich behandeln",
+                 ]},
     "t1_praxis1": {"id": "t1_praxis1", "test_id": "test_1", "type": "praxis", "points": 12,
-                   "text": "Ein Kunde verhält sich aggressiv. Wie gehst du vor?"},
+                   "text": "Ein Kunde verhält sich aggressiv. Wie gehst du vor?",
+                   "grading_notes": [
+                       "nichts persönlich nehmen",
+                       "sachlich kommunizieren",
+                       "dem Kunden nicht ins Wort fallen",
+                       "bei anhaltendem Fehlverhalten vom Hausrecht Gebrauch machen (Hausverbot)",
+                       "Hausverbot im Kanal #hausverbote dokumentieren und mit /hausverbot aussprechen",
+                       "als Mitarbeiter max. 7 Tage Hausverbot; bei schwerwiegenden Verstößen die "
+                       "Leitungsebene kontaktieren",
+                   ]},
 
     "t2_mc1": {"id": "t2_mc1", "test_id": "test_2", "type": "mc", "points": 3,
                "text": "Was ist ein Kredit?",
@@ -340,14 +370,40 @@ SEED_QUESTIONS = {
                "text": "Nach der Mindestlaufzeit von 80% ist eine vollständige Rückzahlung ohne Aufschlag möglich.",
                "correct": False},
     "t2_open1": {"id": "t2_open1", "test_id": "test_2", "type": "open", "points": 10,
-                 "text": "Beschreibe den Ablauf einer Kreditvergabe."},
+                 "text": "Beschreibe den Ablauf einer Kreditvergabe.",
+                 "grading_notes": [
+                     "Kunde beantragt den Kredit (per Ticket)",
+                     "Kreditvertrag wird mit der Vorlage aus #berater-handbuch erstellt (Kopie ausfüllen)",
+                     "Kunde lässt den Vertrag unterschreiben",
+                     "Kredit wird mit /kredit_eintragen eingetragen",
+                     "Nachricht mit Kunde und Vertrag als PDF wird in #kredit-verträge gesendet",
+                     "die Leitungsebene wird gepingt, damit ein Zahlungsticket geöffnet wird",
+                     "Auszahlung erfolgt durch die Auszahlungszuständigen",
+                 ]},
     "t2_open2": {"id": "t2_open2", "test_id": "test_2", "type": "open", "points": 10,
-                 "text": "Erkläre das Mahnverfahren."},
+                 "text": "Erkläre das Mahnverfahren.",
+                 "grading_notes": [
+                     "1. Zahlungsverzug: Zahlungserinnerung",
+                     "2. Zahlungsverzug: Mahnung",
+                     "3. Zahlungsverzug: gesamte Restschuld wird fällig, Vollstreckung bzw. "
+                     "Einzug des Geldes",
+                 ]},
     "t2_open3": {"id": "t2_open3", "test_id": "test_2", "type": "open", "points": 6,
-                 "text": "Welche Informationen zeigt /kredit_info an?"},
+                 "text": "Welche Informationen zeigt /kredit_info an?",
+                 "grading_notes": [
+                     "Kredit-ID", "Kredittyp", "Kreditsumme", "Restschuld",
+                     "nächste Rate", "letzte Zahlungen",
+                 ]},
     "t2_praxis1": {"id": "t2_praxis1", "test_id": "test_2", "type": "praxis", "points": 12,
                    "text": "Ein Kunde möchte seinen Kredit nach 50% der Laufzeit vollständig "
-                           "zurückzahlen. Wie reagierst du?"},
+                           "zurückzahlen. Wie reagierst du?",
+                   "grading_notes": [
+                       "jeder Kredit hat eine Mindestlaufzeit von 80 % der vereinbarten Zeit",
+                       "eine vorzeitige Beendigung vor Ablauf dieser Mindestlaufzeit ist nicht möglich",
+                       "bei 50 % Laufzeit muss der Kunde daher höflich abgelehnt werden",
+                       "nach Erreichen der 80 %-Mindestlaufzeit ist eine vollständige Rückzahlung "
+                       "möglich, dann jedoch mit 15 % Aufschlag als Ausgleich für die fehlenden Zinsen",
+                   ]},
 }
 
 DEFAULT_DB = {
@@ -528,6 +584,25 @@ def bot_send_channel_message(channel_id, title, body_lines, link_url=None, link_
         return False
 
 
+def send_result_dm(user_id, grade, percent):
+    """Schickt die 'PRÜFUNGSERGEBNIS'-DM an einen Mitarbeiter, nachdem seine Prüfung bewertet wurde."""
+    bot_send_dm(
+        user_id,
+        "PRÜFUNGSERGEBNIS",
+        [
+            f"Sehr geehrter <@{user_id}>,",
+            "die Auswertung deiner Prüfung ist so eben erfolgt. Hier die Auswertung:\n"
+            f"- Note: **{grade}**\n"
+            f"- Punkte (in %): **{percent}%**\n"
+            "Du kannst dir deine Prüfung einmal für 15 Minuten im Fortbildungsportal nochmal anschauen, "
+            "wenn du das möchtest.",
+            "Mit freundlichen Grüßen\n~ HHB Fortbildungszentrum",
+        ],
+        link_url=PUBLIC_URL,
+        link_label="Fortbildungsportal",
+    )
+
+
 def has_passed(results, user_id, test_id):
     return any(
         r["user_id"] == user_id and r["test_id"] == test_id
@@ -610,11 +685,11 @@ def callback():
         return redirect("/?error=no_role")
 
     now = datetime.now(timezone.utc).isoformat()
-    display_name = member.get("nick") or me.get("global_name") or me["username"]
+    discord_username = me["username"]
 
     def mutate(users):
         entry = users.get(me["id"], {"first_login": now})
-        entry.update({"username": display_name, "role": role, "last_login": now})
+        entry.update({"username": discord_username, "role": role, "last_login": now})
         users[me["id"]] = entry
 
     update_db("users", mutate)
@@ -904,19 +979,19 @@ def api_attempt_submit(attempt_id):
         if review_channel and fortbilder_role:
             bot_send_channel_message(
                 review_channel,
-                "Neue Prüfung wartet auf Bewertung",
-                [f"<@&{fortbilder_role}>", f"**{out['username']}** hat **{out['test_title']}** eingereicht."],
+                "NEUE PRÜFUNG!",
+                [
+                    f"Sehr geehrte <@&{fortbilder_role}>,",
+                    "eine neue Prüfung wurde eingereicht. Bitte bearbeitet diese so schnell wie möglich "
+                    "und stellt sofern die Prüfung bestanden wurde eine Urkunde aus und sendet diese in "
+                    "den entsprechenden Kanal.",
+                    "Mit freundlichen Grüßen\n~ HHB Fortbildungszentrum",
+                ],
                 link_url=PUBLIC_URL,
-                link_label="Zur Bewertung",
+                link_label="Fortbildungsportal",
             )
     elif out["status"] == "bewertet":
-        bot_send_dm(
-            out["user_id"],
-            "Deine Prüfung wurde bewertet",
-            [f"**{out['test_title']}**\nNote {out['grade']} ({out['percent']}%)"],
-            link_url=PUBLIC_URL,
-            link_label="Ergebnis ansehen",
-        )
+        send_result_dm(out["user_id"], out["grade"], out["percent"])
 
     return jsonify(out)
 
@@ -999,8 +1074,11 @@ def api_result_grade(result_id):
         r = results.get(result_id)
         if not r:
             return {"error": "not_found"}
-        if r["status"] != "eingereicht":
+        is_regrade = r["status"] == "bewertet"
+        if r["status"] not in ("eingereicht", "bewertet"):
             return {"error": "not_gradable"}
+        if is_regrade and u["role"] != "fortbildungsleitung":
+            return {"error": "forbidden"}
 
         manual_total = 0
         manual_breakdown = {}
@@ -1042,16 +1120,11 @@ def api_result_grade(result_id):
 
     out = update_db("results", mutate)
     if "error" in out:
-        return jsonify(out), 400
+        status_code = 403 if out["error"] == "forbidden" else 400
+        return jsonify(out), status_code
     log_event("test_graded", grader_id=u["id"], result_id=result_id)
 
-    bot_send_dm(
-        out["user_id"],
-        "Deine Prüfung wurde bewertet",
-        [f"**{out['test_title']}**\nNote {out['grade']} ({out['percent']}%)"],
-        link_url=PUBLIC_URL,
-        link_label="Ergebnis ansehen",
-    )
+    send_result_dm(out["user_id"], out["grade"], out["percent"])
 
     return jsonify(out)
 

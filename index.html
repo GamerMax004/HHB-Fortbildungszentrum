@@ -251,6 +251,16 @@
   .badge.fail { background: #FCE8E6; color: var(--fail); }
   .badge.pending { background: #FFF4E5; color: #92600B; }
   .muted { color: var(--text-muted); font-size: 13px; }
+  .grading-notes {
+    background: #FAFAFA;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 10px 0;
+  }
+  .grading-notes p { margin: 0 0 4px; }
+  .grading-notes ul { margin: 0; padding-left: 18px; font-size: 13px; }
+  .grading-notes li { margin-bottom: 2px; }
   .empty { color: var(--text-muted); font-size: 14px; padding: 20px 0; text-align: center; }
   .error-banner {
     background: #FCE8E6;
@@ -788,26 +798,29 @@ async function tabBewertung(main) {
       el("p", { class: "muted", text: "Abgegeben am " + fmtDate(r.submitted_at) }),
     ]);
     const openBtn = el("button", { class: "btn small", text: "Bewerten" });
-    openBtn.addEventListener("click", () => openGrading(r.id));
+    openBtn.addEventListener("click", () => openGrading(r.id, "bewertung"));
     card.appendChild(openBtn);
     main.appendChild(card);
   });
 }
 
-async function openGrading(resultId) {
+async function openGrading(resultId, returnTab) {
+  returnTab = returnTab || "bewertung";
   const main = document.getElementById("main");
   const detail = await api("/api/results/" + resultId);
   const r = detail.result;
   const questions = detail.questions;
+  const isRegrade = r.status === "bewertet";
   main.innerHTML = "";
 
   const back = el("button", { class: "btn secondary small", text: "< Zurück" });
-  back.addEventListener("click", () => loadTab());
+  back.addEventListener("click", () => { state.tab = returnTab; loadTab(); });
   main.appendChild(back);
 
   const head = el("div", { class: "card" }, [
     el("h3", { text: r.username + " - " + r.test_title }),
     el("p", { class: "muted", text: "Automatisch erreichte Punkte (Multiple Choice / Richtig-Falsch): " + r.auto_score }),
+    isRegrade ? el("p", { class: "badge pending", text: "Bereits bewertet - du passt die bestehende Bewertung an" }) : null,
   ]);
   main.appendChild(head);
 
@@ -836,10 +849,24 @@ async function openGrading(resultId) {
       card.appendChild(el("p", { class: "muted", text: "Automatisch bewertet." }));
     } else {
       card.appendChild(el("p", { text: given || "(keine Antwort)" }));
-      const pointsInput = el("input", { type: "number", min: "0", max: String(q.points), step: "0.5", value: "0" });
+      if (Array.isArray(q.grading_notes) && q.grading_notes.length) {
+        const notesBox = el("div", { class: "grading-notes" }, [
+          el("p", { class: "muted", text: "Stichpunkte für die Antwort:" }),
+        ]);
+        const list = el("ul");
+        q.grading_notes.forEach(note => list.appendChild(el("li", { text: note })));
+        notesBox.appendChild(list);
+        card.appendChild(notesBox);
+      }
+      const existingPoints = (r.manual_points || {})[q.id];
+      const pointsInput = el("input", {
+        type: "number", min: "0", max: String(q.points), step: "0.5",
+        value: existingPoints !== undefined ? String(existingPoints) : "0",
+      });
       inputs[q.id] = pointsInput;
       card.appendChild(el("label", { class: "field", text: "Vergebene Punkte (max. " + q.points + ")" }, [pointsInput]));
       const commentInput = el("textarea", { placeholder: "Kommentar zu dieser Frage (optional)" });
+      commentInput.value = (r.question_comments || {})[q.id] || "";
       commentInputs[q.id] = commentInput;
       card.appendChild(el("label", { class: "field", text: "Kommentar zu dieser Frage" }, [commentInput]));
     }
@@ -847,13 +874,14 @@ async function openGrading(resultId) {
   });
 
   const commentBox = el("textarea", { placeholder: "Kommentar an den Mitarbeiter (optional)" });
+  commentBox.value = r.comment || "";
   const commentCard = el("div", { class: "card" }, [
     el("label", { class: "field", text: "Gesamtkommentar" }, [commentBox]),
   ]);
   main.appendChild(commentCard);
 
   const err = el("div");
-  const submitBtn = el("button", { class: "btn", text: "Bewertung abschliessen" });
+  const submitBtn = el("button", { class: "btn", text: isRegrade ? "Bewertung aktualisieren" : "Bewertung abschliessen" });
   submitBtn.addEventListener("click", async () => {
     const manual_points = {};
     Object.entries(inputs).forEach(([qid, inp]) => { manual_points[qid] = inp.value; });
@@ -864,7 +892,7 @@ async function openGrading(resultId) {
         method: "POST",
         body: JSON.stringify({ manual_points, question_comments, comment: commentBox.value }),
       });
-      state.tab = "bewertung";
+      state.tab = returnTab;
       loadTab();
     } catch (e) {
       err.innerHTML = "";
@@ -1221,6 +1249,10 @@ async function openAdminResultDetail(resultId) {
     el("p", { class: "muted", text: "Abgegeben am " + fmtDate(r.submitted_at) + " · bewertet von " + (r.graded_by_name || "-") + " am " + fmtDate(r.graded_at) }),
     r.comment ? el("p", { text: "Kommentar: " + r.comment }) : null,
   ]));
+
+  const editBtn = el("button", { class: "btn secondary small", text: "Bewertung anpassen" });
+  editBtn.addEventListener("click", () => openGrading(resultId, "alle-ergebnisse"));
+  main.appendChild(editBtn);
 
   questions.forEach(q => {
     const given = r.answers[q.id];
